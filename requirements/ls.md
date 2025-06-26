@@ -36,9 +36,11 @@ default output mode is `-1` (numeric one), except terminals, their output mode
 is implementation defined.
 
 `-i` option use format:
+
     "%u ", <file serial number>
 
 `-l` option us format:
+
     "%s %u %s %s %u %s %s\n", <file mode>, <number of links>,
     <owner name>, <group name>, <number of bytes in the file>,
     <date and time>, <path name>
@@ -50,8 +52,8 @@ The POSIX locale should use format 1 for files less than 6 months old,
 where as format 2 should be used for files older than 6 months, or where the 
 datetime is set into the future.
 
-  1. date "+%b %e %H:%M"
-  2. date "+%b %e  %Y"
+  1. `date "+%b %e %H:%M"`
+  2. `date "+%b %e  %Y"`
 
 file size is implementation defined for character and block special files.
 
@@ -59,6 +61,7 @@ if a pathname was specified as a file operand, write it as specified, no
 substitions or reductions.
 
 `<file mode>` shall follow format:
+
     "%c%s%s%s%c", <entry type>, <owner permissions>,
     <group permissions>, <other permissions>, 
     <optional alternate access method flag>
@@ -66,6 +69,7 @@ substitions or reductions.
 `<optional alternate access method flag>` use space character if not applicable.
 
 `<entry type>` describes the type of file, where:
+
     d  directory
     b  block special file
     c  character special file
@@ -75,26 +79,29 @@ substitions or reductions.
 implementation defined types may be added.
 
 `<.* permissions>` feilds should follow the following format, where:
-  1. `r` if readable, `-` otherwise
-  2. `w` if readable, `-` otherwise
-  3. the first of the following applies
-    a. `S` if set-user-ID is set, and the owner does not have execute perms
-    b. `s` if set-user-ID is set, and the owner does have execute perms
-    c. `x` if the file is executble or the directory is searchable.
-    d. `-` if none of the above apply.
+  
+ 1. `r` if readable, `-` otherwise
+ 2. `w` if readable, `-` otherwise
+ 3. the first of the following applies  
+  3.1 `S` if set-user-ID is set, and the owner does not have execute perms  
+  3.2 `s` if set-user-ID is set, and the owner does have execute perms  
+  3.3 `x` if the file is executble or the directory is searchable  
+  3.4 `-` if none of the above apply  
     
-    implementations may add other characters to this field, such that all 
-    lowercase indicate the file is executable or searchable, and uppercase if 
-    not.
+implementations may add other characters to field 3, such that all 
+lowercase still indicate the file is executable or searchable, and uppercase
+when not.
 
 `-l` each list of files should be preceeded by a sttus line indecating the 
 number of file system blocks occupied by files in 512B units, rounded up. 
 for example, in the posix locale:
+
     "total %u\n", <number of units in the directory>
 
 if more than one directory, or a combination of nondirectoyr files and 
 directrories are written, (either by multiple operands, or the `-R` options) 
 each list of files should be preceeded by:
+
     "\n%s:\n", <directory name>
 
 if this string is the first item to b writtne, the first `<newline>` character
