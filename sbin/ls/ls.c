@@ -1,8 +1,23 @@
 
+#include <stddef.h>
+#define _POSIX_C_SOURCE 2
+
+#include <assert.h>
+#include <linux/limits.h>
+#include <dirent.h>
+#include <grp.h>
+#include <pwd.h>
+#include <stdarg.h>
 #include <stdio.h> /* legacy posix getopt provider */
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-enum {
+/* settng flags */
+enum { 
+    /* {{{ */
     COLUMN_MODE = 1 << 1,
     SUFFIXES    = 1 << 2,
     RECURSIVE   = 1 << 3,
@@ -19,18 +34,35 @@ enum {
 
     PRINT_MODES = COLUMN_MODE | LONG_MODE | INODE_MODE | SINGLE_MODE,
     TIME_MODES  = FILE_STATUS | FILE_ACCESS,
-};
+    /* }}} */
+}; 
 
 #define ENABLE_BFLAG(var, flag)     ((var) |= (flag))
 #define DISABLE_BFLAG(var, flag)    ((var) &= ~(flag))
 #define IS_BFLAG(var, flag)         ((var) & (flag))
 
+typedef struct {
+    char *inode;
+    char *mode;
+    char *nlink;
+    char *owner;
+    char *group;
+    char *size;
+    char *date;
+    char *name;
+    time_t time;
+} file_info_t;
+
+static int s_conf = 0;
 
 int
-get_config (int argc, char **argv)
-{
+get_config (int argc, char **argv, int *p_conf)
+{ 
+    /* {{{ */
     int config = SINGLE_MODE | FILE_STATUS;
     int c = 0;
+
+    assert (p_conf != NULL);
 
     while (-1 != (c = getopt (argc, argv, "CFRacdilqrtu1")))
     {
@@ -94,27 +126,306 @@ get_config (int argc, char **argv)
             (void)printf ("usage: ls [-CFRacdilqrtu1][file...]\n");
             goto exit;
         }
+
     }
 
 exit:
-    return config;
+    *p_conf = config;
+    return optind;
+    /* }}} */
+}
+
+char *
+sprintf_dup (const char *fmt, ...)
+{
+    /* {{{ */
+    char *buf = NULL;
+    size_t n = 0;
+
+    va_list args, args_copy;
+    va_start (args, fmt);
+    va_copy (args_copy, args);
+
+    n = vsnprintf (NULL, 0, fmt, args);
+    buf = malloc (n + 1);
+    assert (buf != NULL);
+
+    (void)vsnprintf (buf, n+1, fmt, args_copy);
+
+    va_end (args);
+    va_end (args_copy);
+
+    return buf;
+    /* }}} */
+}
+
+char *
+get_user_name (uid_t uid)
+{
+    /* {{{ */
+    struct passwd *user = NULL;
+    const char *name = NULL;
+
+    /* get data about the user */
+    user = getpwuid (uid);
+
+    /* if the the user cannot be found */
+    if (NULL == user)
+    {
+        return sprintf_dup ("%u", uid);
+    }
+
+    return sprintf_dup ("%s", user->pw_name);
+    /* }}} */
+}
+
+char *
+get_group_name (gid_t gid)
+{
+    /* {{{ */
+    struct group *group = NULL;
+    const char *name = NULL;
+
+    /* get data about the group */
+    group = getgrgid (gid);
+
+    /* if the the group cannot be found */
+    if (NULL == group)
+    {
+        return sprintf_dup ("%u", gid);
+    }
+
+    return sprintf_dup ("%s", group->gr_name);
+    /* }}} */
+}
+
+char *
+get_file_mode (mode_t file_mode)
+{
+    /* {{{ */
+    char buf[12] = { 0 };
+    
+    /* type of file */
+    buf[0] = (S_ISDIR (file_mode)  ? 'd' :
+              S_ISBLK (file_mode)  ? 'b' :
+              S_ISCHR (file_mode)  ? 'c' :
+              S_ISFIFO (file_mode) ? 'p' : 
+              S_ISREG (file_mode)  ? '-' : '?');
+
+    if (buf[0] == '?')
+    {
+        fprintf (stderr, "ls: unkown type of file\n");
+        return NULL;
+    }
+
+    /* owner file perms */
+    buf[1] = (file_mode & S_IRUSR) ? 'r' : '-';
+    buf[2] = (file_mode & S_IWUSR) ? 'w' : '-';
+
+    if (file_mode & S_ISUID)
+    { 
+        buf[3] = (file_mode & S_IXUSR) ? 'S' : 's';
+    }
+    else
+    {
+        buf[3] = (file_mode & S_IXUSR) ? 'x' : '-';
+    }
+
+    /* group file perms */
+    buf[4] = (file_mode & S_IRGRP ? 'r' : '-');
+    buf[5] = (file_mode & S_IWGRP ? 'w' : '-');
+    buf[6] = (file_mode & S_IXGRP ? 'x' : '-');
+
+    /* other file perms */
+    buf[7] = (file_mode & S_IROTH ? 'r' : '-');
+    buf[8] = (file_mode & S_IWOTH ? 'w' : '-');
+    buf[9] = (file_mode & S_IXOTH ? 'x' : '-');
+
+    /* alternate access method flag */
+    buf[10] = ' ';
+    buf[11] = '\0';
+
+    return sprintf_dup ("%s", buf);
+    /* }}} */
+}
+
+char *
+get_date (time_t time)
+{
+    /* {{{ */
+    return sprintf_dup ("[todo: get_date()]");
+    /* }}} */
+}
+
+int
+file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
+{
+    /* {{{ */
+    struct stat header = { 0 };
+
+    if (0 != stat (filepath, &header))
+    {
+        perror ("cannot stat file");
+        return -1;
+    }
+
+    self->inode = sprintf_dup ("%lu", item->d_ino);
+    self->mode  = get_file_mode (header.st_mode);
+    self->nlink = sprintf_dup ("%lu", header.st_nlink);
+    self->owner = get_user_name (header.st_uid);
+    self->group = get_group_name (header.st_gid);
+    self->size  = sprintf_dup ("%ld", header.st_size);
+    self->name  = sprintf_dup ("%s", item->d_name);
+
+    self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
+                                         : header.st_mtime;
+
+    self->date = get_date (self->time);
+
+    return 0;
+    /* }}} */
+}
+
+void
+file_info_destroy (file_info_t *self)
+{
+    if (self == NULL) return;
+
+    free (self->inode);
+    free (self->mode);
+    free (self->nlink);
+    free (self->owner);
+    free (self->group);
+    free (self->size);
+    free (self->date);
+    free (self->name);
+}
+
+size_t
+dir_size (const char dirname[])
+{
+    /* {{{ */
+    DIR *dir = opendir (dirname);
+    struct dirent *dirent = NULL;
+    size_t count = 0;
+
+    /* iterate over the directory contents */
+    while ((dirent = readdir (dir)) != NULL)
+    {
+        count++;
+    }
+
+    closedir (dir);
+    return count;
+    /* }}} */
+}
+
+char *
+add_child (const char *dir, const char *child)
+{
+    /* {{{ */
+    static char s_result[PATH_MAX+1] = { 0 };
+    (void)snprintf (s_result, PATH_MAX+1, "%s/%s", dir, child);
+    return s_result; 
+    /* }}} */
+}
+
+int
+dir_content (file_info_t *buf, size_t n, const char dirname[])
+{
+    /* {{{ */
+    DIR *dir = opendir (dirname);
+    struct dirent *dirent = NULL;
+    size_t count = 0;
+  
+    if (dir == NULL)
+    {
+        perror ("cannot read directory");
+        return -1;
+    }
+
+    /* iterate over the directory contents */
+    while ((dirent = readdir (dir)) != NULL)
+    {
+        count++;
+        if (buf == NULL) continue;
+        if (count > n) 
+        { 
+            closedir (dir);
+            return count; 
+        }
+
+        file_info_new (buf++, add_child (dirname, dirent->d_name), dirent);
+    }
+
+    closedir (dir);
+    return count;
+    /* }}} */
+}
+
+int
+long_mode (file_info_t *files, size_t file_count, const char *dir)
+{
+    /* {{{ */
+    file_info_t *iter = files;
+    size_t i = 0;
+
+    for (; i < file_count; i++, iter++)
+    {
+        printf ("%s %s %s %s %s %s %s\n",
+                iter->mode, iter->nlink, iter->owner, iter->group, iter->size, 
+                iter->date, iter->name);
+    }
+
+    return 0;
+    /* }}} */
 }
 
 int
 ls_main (int argc, char **argv)
-{
-    int config = get_config (argc, argv);
-    
-    printf ("%016X\n", config);
+{ 
+    /* {{{ */
+
+    const char *columns     = getenv ("COLUMNS");
+    const char *lang        = getenv ("LANG");
+    const char *lc_all      = getenv ("LC_ALL");
+    const char *lc_collate  = getenv ("LC_COLLATE");
+    const char *lc_ctype    = getenv ("LC_CTYPE");
+    const char *lc_messages = getenv ("LC_MESSAGES");
+    const char *lc_time     = getenv ("LC_TIME");
+    const char *tz          = getenv ("TZ");
+
+    char *dir = NULL;
+    file_info_t *files = NULL;
+    size_t file_count = 0;
+
+    int n = get_config (argc, argv, &s_conf);
+
+    /* set argc, argv to the first non-option argument */
+    argc -= n;
+    argv += n;
+
+    dir = *argv == NULL ? "." : *argv;
+
+    file_count = dir_content (NULL, 0, dir);
+    files = malloc (file_count * sizeof (*files));
+    (void)dir_content (files, file_count, dir);
+
+    long_mode (files, file_count, dir);
+
+    /* free files */
 
     return 0;
-
-}
+    /* }}} */
+} 
 
 int
 main (int argc, char **argv)
-{
+{ 
+    /* {{{ */
     return ls_main (argc, argv);
+    /* }}} */
 }
 
-/* end of file */
+/* vim: fdm=marker
+ * end of file */
