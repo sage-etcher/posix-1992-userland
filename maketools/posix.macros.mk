@@ -1,0 +1,13 @@
+
+CC	?= clang
+CFLAGS	?= -O2 -pipe
+LFLAGS	?= -ggdb
+
+DESTDIR	?=
+PREFIX	?= /usr/local
+BINDIR	?= $(DESTDIR)/$(PREFIX)/bin
+SBINDIR	?= $(DESTDIR)/$(PREFIX)/sbin
+LIBDIR	?= $(DESTDIR)/$(PREFIX)/lib
+MANDIR	?= $(DESTDIR)/$(PREFIX)/share/man
+
+# vim: noet
