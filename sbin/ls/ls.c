@@ -1,5 +1,4 @@
 
-#include <stddef.h>
 #define _POSIX_C_SOURCE 2
 
 #include <assert.h>
@@ -8,7 +7,8 @@
 #include <grp.h>
 #include <pwd.h>
 #include <stdarg.h>
-#include <stdio.h> /* legacy posix getopt provider */
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -41,6 +41,8 @@ enum {
 #define ENABLE_BFLAG(var, flag)     ((var) |= (flag))
 #define DISABLE_BFLAG(var, flag)    ((var) &= ~(flag))
 #define IS_BFLAG(var, flag)         ((var) & (flag))
+
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 typedef struct {
     char *inode;
@@ -304,6 +306,20 @@ get_date (time_t file_time)
     /* }}} */
 }
 
+char *
+get_file_name (char *name, mode_t mode)
+{
+    char file_suffix = ' ';
+    if (!(s_conf & SUFFIXES)) goto exit;
+
+    if (S_ISFIFO (mode)) file_suffix = '|';
+    else if (S_ISDIR (mode)) file_suffix = '/';
+    else if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) file_suffix = '*';
+
+exit:
+    return sprintf_dup ("%s%c", name, file_suffix);
+}
+
 int
 file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
 {
@@ -322,7 +338,7 @@ file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
     self->owner = get_user_name (header.st_uid);
     self->group = get_group_name (header.st_gid);
     self->size  = sprintf_dup ("%ld", header.st_size);
-    self->name  = sprintf_dup ("%s", item->d_name);
+    self->name  = get_file_name (item->d_name, header.st_mode);
 
     self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
                                          : header.st_mtime;
@@ -412,7 +428,6 @@ dir_content (file_info_t *buf, size_t n, const char dirname[])
     /* }}} */
 }
 
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
 int
 long_mode (file_info_t *files, size_t file_count, const char *dir)
 {
