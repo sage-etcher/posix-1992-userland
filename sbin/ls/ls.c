@@ -236,12 +236,6 @@ get_file_mode (mode_t file_mode)
               S_ISFIFO (file_mode) ? 'p' : 
               S_ISREG (file_mode)  ? '-' : '?');
 
-    if (buf[0] == '?')
-    {
-        fprintf (stderr, "ls: unkown type of file\n");
-        return NULL;
-    }
-
     /* owner file perms */
     buf[1] = (file_mode & S_IRUSR) ? 'r' : '-';
     buf[2] = (file_mode & S_IWUSR) ? 'w' : '-';
