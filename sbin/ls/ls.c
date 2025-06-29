@@ -55,6 +55,7 @@ typedef struct {
     char *name;
     char suffix;
     time_t time;
+    size_t blocks;
 } file_info_t;
 
 static int s_conf = 0;
@@ -372,6 +373,8 @@ file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
 
     self->date = get_date (self->time);
 
+    self->blocks = header.st_blocks;
+
     return 0;
     /* }}} */
 }
@@ -460,6 +463,7 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
 {
     /* {{{ */
     int max_widths[7] = {0};
+    size_t total_blocks = 0;
 
     file_info_t *iter = NULL;
     size_t i = 0;
@@ -474,6 +478,13 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
         max_widths[4] = MAX (max_widths[4], (int)strlen (iter->group));
         max_widths[5] = MAX (max_widths[5], (int)strlen (iter->size));
         max_widths[6] = MAX (max_widths[6], (int)strlen (iter->date));
+
+        total_blocks += iter->blocks;
+    }
+
+    if (!(s_conf & NO_DIRECTORY))
+    {
+        printf ("total %zu\n", total_blocks);
     }
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
