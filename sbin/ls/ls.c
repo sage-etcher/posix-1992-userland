@@ -60,6 +60,7 @@ typedef struct {
 
 static int s_conf = 0;
 
+/* generic */
 size_t
 filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 {
@@ -80,85 +81,6 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
     }
 
     return count;
-    /* }}} */
-}
-
-int
-get_config (int argc, char **argv, int *p_conf)
-{ 
-    /* {{{ */
-    int config = SINGLE_MODE | FILE_STATUS;
-    int c = 0;
-
-    assert (p_conf != NULL);
-
-    while (-1 != (c = getopt (argc, argv, "CFRacdilqrtu1")))
-    {
-        switch (c)
-        {
-        case 'C':
-            DISABLE_BFLAG (config, PRINT_MODES);
-            ENABLE_BFLAG (config, COLUMN_MODE);
-            break;
-
-        case 'F':
-            ENABLE_BFLAG (config, SUFFIXES);
-            break;
-
-        case 'R':
-            ENABLE_BFLAG (config, RECURSIVE);
-            break;
-
-        case 'a':
-            ENABLE_BFLAG (config, HIDDEN);
-            break;
-
-        case 'c':
-            DISABLE_BFLAG (config, TIME_MODES);
-            ENABLE_BFLAG (config, FILE_STATUS);
-            break;
-
-        case 'd':
-            ENABLE_BFLAG (config, NO_DIRECTORY);
-            break;
-
-        case 'i':
-            ENABLE_BFLAG (config, INODE_MODE);
-            break;
-
-        case 'l':
-            DISABLE_BFLAG (config, PRINT_MODES);
-            ENABLE_BFLAG (config, LONG_MODE);
-            break;
-
-        case 'r':
-            ENABLE_BFLAG (config, SORT_REVERSE);
-            break;
-
-        case 't':
-            ENABLE_BFLAG (config, SORT_TIME);
-            break;
-
-        case 'u':
-            ENABLE_BFLAG (config, FILE_ACCESS);
-            break;
-
-        case '1':
-            DISABLE_BFLAG (config, PRINT_MODES);
-            ENABLE_BFLAG (config, SINGLE_MODE);
-            break;
-
-        case '?':
-        default:
-            (void)printf ("usage: ls [-CFRacdilqrtu1][file...]\n");
-            return -1;
-        }
-
-    }
-
-exit:
-    *p_conf = config;
-    return optind;
     /* }}} */
 }
 
@@ -186,6 +108,55 @@ sprintf_dup (const char *fmt, ...)
     /* }}} */
 }
 
+
+/* unix stuff */
+char *
+add_child (const char *dir, const char *child)
+{
+    /* {{{ */
+    static char s_result[PATH_MAX+1] = { 0 };
+    (void)snprintf (s_result, PATH_MAX+1, "%s/%s", dir, child);
+    return s_result; 
+    /* }}} */
+}
+
+
+/* ls callbacks */
+int 
+sort_alphabetical (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_info_t *file0 = a;
+    const file_info_t *file1 = b;
+    int result = strcmp (file0->name, file1->name);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
+int 
+sort_date (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_info_t *file0 = a;
+    const file_info_t *file1 = b;
+    int result = -(int)difftime (file0->time, file1->time);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
+int
+filter_hidden (void *a)
+{
+    /* {{{ */
+    file_info_t *file = a;
+    return (*file->name != '.');
+    /* }}} */
+}
+
+
+/* ls exclusive */
 char *
 get_user_name (uid_t uid)
 {
@@ -348,7 +319,6 @@ get_file_suffix (mode_t mode)
     return ' ';
     /* }}} */
 }
-
 int
 file_info_new (file_info_t *self, const char *filepath, const char *filename)
 {
@@ -414,16 +384,6 @@ dir_size (const char dirname[])
 
     closedir (dir);
     return count;
-    /* }}} */
-}
-
-char *
-add_child (const char *dir, const char *child)
-{
-    /* {{{ */
-    static char s_result[PATH_MAX+1] = { 0 };
-    (void)snprintf (s_result, PATH_MAX+1, "%s/%s", dir, child);
-    return s_result; 
     /* }}} */
 }
 
@@ -549,41 +509,81 @@ single_mode (file_info_t *files, size_t file_count, const char *dir)
     return 0;
     /* }}} */
 }
-
-
-int 
-sort_alphabetical (const void *a, const void *b)
-{
-    /* {{{ */
-    const file_info_t *file0 = a;
-    const file_info_t *file1 = b;
-    int result = strcmp (file0->name, file1->name);
-    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
-    return result;
-    /* }}} */
-}
-
-int 
-sort_date (const void *a, const void *b)
-{
-    /* {{{ */
-    const file_info_t *file0 = a;
-    const file_info_t *file1 = b;
-    int result = -(int)difftime (file0->time, file1->time);
-    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
-    return result;
-    /* }}} */
-}
-
 int
-filter_hidden (void *a)
-{
+get_config (int argc, char **argv, int *p_conf)
+{ 
     /* {{{ */
-    file_info_t *file = a;
-    return (*file->name != '.');
+    int config = SINGLE_MODE | FILE_STATUS;
+    int c = 0;
+
+    assert (p_conf != NULL);
+
+    while (-1 != (c = getopt (argc, argv, "CFRacdilqrtu1")))
+    {
+        switch (c)
+        {
+        case 'C':
+            DISABLE_BFLAG (config, PRINT_MODES);
+            ENABLE_BFLAG (config, COLUMN_MODE);
+            break;
+
+        case 'F':
+            ENABLE_BFLAG (config, SUFFIXES);
+            break;
+
+        case 'R':
+            ENABLE_BFLAG (config, RECURSIVE);
+            break;
+
+        case 'a':
+            ENABLE_BFLAG (config, HIDDEN);
+            break;
+
+        case 'c':
+            DISABLE_BFLAG (config, TIME_MODES);
+            ENABLE_BFLAG (config, FILE_STATUS);
+            break;
+
+        case 'd':
+            ENABLE_BFLAG (config, NO_DIRECTORY);
+            break;
+
+        case 'i':
+            ENABLE_BFLAG (config, INODE_MODE);
+            break;
+
+        case 'l':
+            DISABLE_BFLAG (config, PRINT_MODES);
+            ENABLE_BFLAG (config, LONG_MODE);
+            break;
+
+        case 'r':
+            ENABLE_BFLAG (config, SORT_REVERSE);
+            break;
+
+        case 't':
+            ENABLE_BFLAG (config, SORT_TIME);
+            break;
+
+        case 'u': ENABLE_BFLAG (config, FILE_ACCESS); break;
+        case '1':
+            DISABLE_BFLAG (config, PRINT_MODES);
+            ENABLE_BFLAG (config, SINGLE_MODE);
+            break;
+
+        case '?':
+        default:
+            (void)printf ("usage: ls [-CFRacdilqrtu1][file...]\n");
+            return -1;
+        }
+
+    }
+
+exit:
+    *p_conf = config;
+    return optind;
     /* }}} */
 }
-
 
 int
 ls_main (int argc, char **argv)
