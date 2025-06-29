@@ -63,6 +63,7 @@ static int s_conf = 0;
 size_t
 filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 {
+    /* {{{ */
     unsigned char *src = arr;
     unsigned char *dst = arr;
     size_t count = 0;
@@ -79,6 +80,7 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
     }
 
     return count;
+    /* }}} */
 }
 
 int
@@ -512,13 +514,16 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
 int 
 column_mode (file_info_t *files, size_t file_count, const char *dir)
 {
+    /* {{{ */
     printf ("[todo: column_mode()]\n");
     return -1;
+    /* }}} */
 }
 
 int 
 single_mode (file_info_t *files, size_t file_count, const char *dir)
 {
+    /* {{{ */
     int max_widths[1] = {0};
 
     file_info_t *iter = NULL;
@@ -542,6 +547,7 @@ single_mode (file_info_t *files, size_t file_count, const char *dir)
     }
 
     return 0;
+    /* }}} */
 }
 
 
