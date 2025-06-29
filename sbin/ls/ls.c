@@ -348,7 +348,7 @@ get_file_suffix (mode_t mode)
 }
 
 int
-file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
+file_info_new (file_info_t *self, const char *filepath, const char *filename)
 {
     /* {{{ */
     struct stat header = { 0 };
@@ -359,13 +359,13 @@ file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
         return -1;
     }
 
-    self->inode = sprintf_dup ("%lu", item->d_ino);
+    self->inode = sprintf_dup ("%lu", header.st_ino);
     self->mode  = get_file_mode (header.st_mode);
     self->nlink = sprintf_dup ("%lu", header.st_nlink);
     self->owner = get_user_name (header.st_uid);
     self->group = get_group_name (header.st_gid);
     self->size  = sprintf_dup ("%ld", header.st_size);
-    self->name  = sprintf_dup ("%s", item->d_name);
+    self->name  = sprintf_dup ("%s", filename);
     self->suffix = get_file_suffix (header.st_mode);
 
     self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
@@ -450,7 +450,7 @@ dir_content (file_info_t *buf, size_t n, const char dirname[])
             return count; 
         }
 
-        file_info_new (buf++, add_child (dirname, dirent->d_name), dirent);
+        file_info_new (buf++, add_child (dirname, dirent->d_name), dirent->d_name);
     }
 
     closedir (dir);
@@ -583,11 +583,13 @@ int
 ls_main (int argc, char **argv)
 {
     /* {{{ */
+    int i = 0;
     const char *columns     = getenv ("COLUMNS");
 
     char *dir = NULL;
     file_info_t *files = NULL;
     size_t file_count = 0;
+    int dir_count = 0;
 
     int n = get_config (argc, argv, &s_conf);
 
@@ -596,40 +598,87 @@ ls_main (int argc, char **argv)
     /* set argc, argv to the first non-option argument */
     argc -= n;
     argv += n;
+    
+    if (argc <= 0)
+    {
+        dir = ".";
+        dir_count = 1;
+    }
+    else
+    {
+        dir = *argv;
+        dir_count = argc;
+    }
+    
+    do 
+    {
+        if (s_conf & NO_DIRECTORY)
+        {
+            file_count = dir_count;
+            files = malloc (file_count * sizeof (*files));
 
-    dir = *argv == NULL ? "." : *argv;
+            i = 0;
+            do
+            {
+                file_info_new (&files[i], dir, dir);
+                i++;
+                dir = argv[i];
+            }
+            while (i < argc);
 
-    file_count = dir_content (NULL, 0, dir);
-    files = malloc (file_count * sizeof (*files));
-    (void)dir_content (files, file_count, dir);
+            argc = 0;
+        }
+        else
+        {
+            if (dir_count > 1)
+            {
+                printf ("%s:\n", dir);
+            }
 
-    if (!(s_conf & HIDDEN))
-    {
-        file_count = filter (files, file_count, sizeof (*files), filter_hidden);
-    }
+            file_count = dir_content (NULL, 0, dir);
+            files = malloc (file_count * sizeof (*files));
+            (void)dir_content (files, file_count, dir);
 
-    qsort (files, file_count, sizeof (*files), sort_alphabetical);
-    if (s_conf & SORT_TIME)
-    {
-        qsort (files, file_count, sizeof (*files), sort_date);
-    }
+            if (!(s_conf & HIDDEN))
+            {
+                file_count = filter (files, file_count, sizeof (*files), filter_hidden);
+            }
+        }
 
-    if (s_conf & LONG_MODE)
-    {
-        long_mode (files, file_count, dir);
-    }
-    else if (s_conf & COLUMN_MODE)
-    {
-        column_mode (files, file_count, dir);
-    }
-    else if (s_conf & SINGLE_MODE)
-    {
-        single_mode (files, file_count, dir);
-    }
-    else 
-    {
-        single_mode (files, file_count, dir);
-    }
+        qsort (files, file_count, sizeof (*files), sort_alphabetical);
+        if (s_conf & SORT_TIME)
+        {
+            qsort (files, file_count, sizeof (*files), sort_date);
+        }
+
+        if (s_conf & LONG_MODE)
+        {
+            long_mode (files, file_count, dir);
+        }
+        else if (s_conf & COLUMN_MODE)
+        {
+            column_mode (files, file_count, dir);
+        }
+        else if (s_conf & SINGLE_MODE)
+        {
+            single_mode (files, file_count, dir);
+        }
+        else 
+        {
+            single_mode (files, file_count, dir);
+        }
+
+        argc--;
+        argv++;
+        dir = *argv;
+
+        if ((argc > 0) && (!(s_conf & NO_DIRECTORY)))
+        {
+            printf ("\n");
+        }
+
+    } 
+    while (argc > 0);
 
     /* free files */
 
