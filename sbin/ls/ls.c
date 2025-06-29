@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 /* settng flags */
@@ -124,7 +125,7 @@ get_config (int argc, char **argv, int *p_conf)
         case '?':
         default:
             (void)printf ("usage: ls [-CFRacdilqrtu1][file...]\n");
-            goto exit;
+            return -1;
         }
 
     }
@@ -249,11 +250,57 @@ get_file_mode (mode_t file_mode)
     /* }}} */
 }
 
-char *
-get_date (time_t time)
+double 
+check_oldest (time_t file_time, time_t now)
 {
     /* {{{ */
-    return sprintf_dup ("[todo: get_date()]");
+    struct tm *oldest_date = NULL;
+    time_t oldest_time = 0;
+
+    oldest_date = localtime (&now);
+    if (oldest_date->tm_mon < 6)
+    {
+        oldest_date->tm_year--;
+        oldest_date->tm_mon += 12;
+    }
+    oldest_date->tm_mon -= 6;
+    oldest_time = mktime (oldest_date);
+
+    return difftime (file_time, oldest_time);
+    /* }}} */
+}
+
+double 
+check_future (time_t file_time, time_t now)
+{
+    /* {{{ */
+    return difftime (now, file_time);
+    /* }}} */
+}
+
+char *
+get_date (time_t file_time)
+{
+    /* {{{ */
+    static char s_buf[100];
+    const char *date_format = NULL;
+    const char *posix_new_fmt = "%b %e %H:%M";
+    const char *posix_old_fmt = "%b %e  %Y";
+    time_t now = time (NULL);
+
+    if ((check_future (file_time, now) < 0) || 
+        (check_oldest (file_time, now) <= 0))
+    {
+        date_format = posix_old_fmt;
+    }
+    else
+    {
+        date_format = posix_new_fmt;
+    }
+
+    strftime (s_buf, 100, date_format, localtime (&file_time));
+
+    return sprintf_dup ("%s", s_buf);
     /* }}} */
 }
 
@@ -289,6 +336,7 @@ file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
 void
 file_info_destroy (file_info_t *self)
 {
+    /* {{{ */
     if (self == NULL) return;
 
     free (self->inode);
@@ -299,6 +347,7 @@ file_info_destroy (file_info_t *self)
     free (self->size);
     free (self->date);
     free (self->name);
+    /* }}} */
 }
 
 size_t
@@ -363,27 +412,71 @@ dir_content (file_info_t *buf, size_t n, const char dirname[])
     /* }}} */
 }
 
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 int
 long_mode (file_info_t *files, size_t file_count, const char *dir)
 {
     /* {{{ */
-    file_info_t *iter = files;
+    int max_widths[7] = {0};
+
+    file_info_t *iter = NULL;
     size_t i = 0;
 
-    for (; i < file_count; i++, iter++)
+
+    for (i = 0, iter = files; i < file_count; i++, iter++)
     {
-        printf ("%s %s %s %s %s %s %s\n",
-                iter->mode, iter->nlink, iter->owner, iter->group, iter->size, 
-                iter->date, iter->name);
+        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->mode));
+        max_widths[1] = MAX (max_widths[1], (int)strlen (iter->nlink));
+        max_widths[2] = MAX (max_widths[2], (int)strlen (iter->owner));
+        max_widths[3] = MAX (max_widths[3], (int)strlen (iter->group));
+        max_widths[4] = MAX (max_widths[4], (int)strlen (iter->size));
+        max_widths[5] = MAX (max_widths[5], (int)strlen (iter->date));
+        max_widths[6] = MAX (max_widths[6], (int)strlen (iter->name));
+    }
+
+    for (i = 0, iter = files; i < file_count; i++, iter++)
+    {
+        printf ("%*s %*s %*s %*s %*s %*s %.*s\n",
+                max_widths[0], iter->mode, 
+                max_widths[1], iter->nlink, 
+                max_widths[2], iter->owner, 
+                max_widths[3], iter->group, 
+                max_widths[4], iter->size, 
+                max_widths[5], iter->date, 
+                max_widths[6], iter->name);
     }
 
     return 0;
     /* }}} */
 }
 
+int 
+sort_alphabetical (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_info_t *file0 = a;
+    const file_info_t *file1 = b;
+    int result = strcmp (file0->name, file1->name);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
+int 
+sort_date (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_info_t *file0 = a;
+    const file_info_t *file1 = b;
+    int result = -(int)difftime (file0->time, file1->time);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
 int
 ls_main (int argc, char **argv)
-{ 
+{
     /* {{{ */
 
     const char *columns     = getenv ("COLUMNS");
@@ -401,6 +494,8 @@ ls_main (int argc, char **argv)
 
     int n = get_config (argc, argv, &s_conf);
 
+    if (n <= 0) return -1;
+
     /* set argc, argv to the first non-option argument */
     argc -= n;
     argv += n;
@@ -411,17 +506,26 @@ ls_main (int argc, char **argv)
     files = malloc (file_count * sizeof (*files));
     (void)dir_content (files, file_count, dir);
 
+    if (s_conf & SORT_TIME)
+    {
+        qsort (files, file_count, sizeof (*files), sort_date);
+    }
+    else
+    {
+        qsort (files, file_count, sizeof (*files), sort_alphabetical);
+    }
+
     long_mode (files, file_count, dir);
 
     /* free files */
 
     return 0;
     /* }}} */
-} 
+}
 
 int
 main (int argc, char **argv)
-{ 
+{
     /* {{{ */
     return ls_main (argc, argv);
     /* }}} */
