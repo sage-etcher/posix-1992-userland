@@ -33,7 +33,7 @@ enum {
     FILE_ACCESS = 1 << 12,
     SINGLE_MODE = 1 << 13,
 
-    PRINT_MODES = COLUMN_MODE | LONG_MODE | INODE_MODE | SINGLE_MODE,
+    PRINT_MODES = COLUMN_MODE | LONG_MODE | SINGLE_MODE,
     TIME_MODES  = FILE_STATUS | FILE_ACCESS,
     /* }}} */
 }; 
@@ -53,10 +53,32 @@ typedef struct {
     char *size;
     char *date;
     char *name;
+    char suffix;
     time_t time;
 } file_info_t;
 
 static int s_conf = 0;
+
+size_t
+filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
+{
+    unsigned char *src = arr;
+    unsigned char *dst = arr;
+    size_t count = 0;
+
+    for (; elem_count > 0; elem_count--)
+    {
+        if (cb (src))
+        {
+            (void)memcpy (dst, src, elem_size);
+            dst += elem_size;
+            count++;
+        }
+        src += elem_size;
+    }
+
+    return count;
+}
 
 int
 get_config (int argc, char **argv, int *p_conf)
@@ -98,7 +120,6 @@ get_config (int argc, char **argv, int *p_conf)
             break;
 
         case 'i':
-            DISABLE_BFLAG (config, PRINT_MODES);
             ENABLE_BFLAG (config, INODE_MODE);
             break;
 
@@ -306,18 +327,29 @@ get_date (time_t file_time)
     /* }}} */
 }
 
-char *
-get_file_name (char *name, mode_t mode)
+char
+get_file_suffix (mode_t mode)
 {
-    char file_suffix = ' ';
-    if (!(s_conf & SUFFIXES)) goto exit;
-
-    if (S_ISFIFO (mode)) file_suffix = '|';
-    else if (S_ISDIR (mode)) file_suffix = '/';
-    else if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) file_suffix = '*';
-
-exit:
-    return sprintf_dup ("%s%c", name, file_suffix);
+    /* {{{ */
+    if (!(s_conf & SUFFIXES)) 
+    {
+        return ' ';
+    }
+    if (S_ISFIFO (mode)) 
+    {
+        return '|';
+    }
+    if (S_ISDIR (mode)) 
+    {
+        return '/';
+    }
+    if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) 
+    {
+        return '*';
+    }
+    
+    return ' ';
+    /* }}} */
 }
 
 int
@@ -338,7 +370,8 @@ file_info_new (file_info_t *self, const char *filepath, struct dirent *item)
     self->owner = get_user_name (header.st_uid);
     self->group = get_group_name (header.st_gid);
     self->size  = sprintf_dup ("%ld", header.st_size);
-    self->name  = get_file_name (item->d_name, header.st_mode);
+    self->name  = sprintf_dup ("%s", item->d_name);
+    self->suffix = get_file_suffix (header.st_mode);
 
     self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
                                          : header.st_mtime;
@@ -440,30 +473,72 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
     {
-        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->mode));
-        max_widths[1] = MAX (max_widths[1], (int)strlen (iter->nlink));
-        max_widths[2] = MAX (max_widths[2], (int)strlen (iter->owner));
-        max_widths[3] = MAX (max_widths[3], (int)strlen (iter->group));
-        max_widths[4] = MAX (max_widths[4], (int)strlen (iter->size));
-        max_widths[5] = MAX (max_widths[5], (int)strlen (iter->date));
-        max_widths[6] = MAX (max_widths[6], (int)strlen (iter->name));
+        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->inode));
+        max_widths[1] = MAX (max_widths[1], (int)strlen (iter->mode));
+        max_widths[2] = MAX (max_widths[2], (int)strlen (iter->nlink));
+        max_widths[3] = MAX (max_widths[3], (int)strlen (iter->owner));
+        max_widths[4] = MAX (max_widths[4], (int)strlen (iter->group));
+        max_widths[5] = MAX (max_widths[5], (int)strlen (iter->size));
+        max_widths[6] = MAX (max_widths[6], (int)strlen (iter->date));
     }
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
     {
-        printf ("%*s %*s %*s %*s %*s %*s %.*s\n",
-                max_widths[0], iter->mode, 
-                max_widths[1], iter->nlink, 
-                max_widths[2], iter->owner, 
-                max_widths[3], iter->group, 
-                max_widths[4], iter->size, 
-                max_widths[5], iter->date, 
-                max_widths[6], iter->name);
+        if (s_conf & INODE_MODE)
+        {
+            printf ("%*s ", max_widths[0], iter->inode);
+        }
+
+        printf ("%*s %*s %*s %*s %*s %*s %s%c\n",
+                max_widths[1], iter->mode, 
+                max_widths[2], iter->nlink, 
+                max_widths[3], iter->owner, 
+                max_widths[4], iter->group, 
+                max_widths[5], iter->size, 
+                max_widths[6], iter->date, 
+                iter->name,
+                iter->suffix);
     }
 
     return 0;
     /* }}} */
 }
+
+int 
+column_mode (file_info_t *files, size_t file_count, const char *dir)
+{
+    printf ("[todo: column_mode()]\n");
+    return -1;
+}
+
+int 
+single_mode (file_info_t *files, size_t file_count, const char *dir)
+{
+    int max_widths[1] = {0};
+
+    file_info_t *iter = NULL;
+    size_t i = 0;
+
+    for (i = 0, iter = files; i < file_count; i++, iter++)
+    {
+        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->inode));
+    }
+
+    for (i = 0, iter = files; i < file_count; i++, iter++)
+    {
+        if (s_conf & INODE_MODE)
+        {
+            printf ("%*s ", max_widths[0], iter->inode);
+        }
+
+        printf ("%s%c\n",
+                iter->name,
+                iter->suffix);
+    }
+
+    return 0;
+}
+
 
 int 
 sort_alphabetical (const void *a, const void *b)
@@ -490,18 +565,20 @@ sort_date (const void *a, const void *b)
 }
 
 int
+filter_hidden (void *a)
+{
+    /* {{{ */
+    file_info_t *file = a;
+    return (*file->name != '.');
+    /* }}} */
+}
+
+
+int
 ls_main (int argc, char **argv)
 {
     /* {{{ */
-
     const char *columns     = getenv ("COLUMNS");
-    const char *lang        = getenv ("LANG");
-    const char *lc_all      = getenv ("LC_ALL");
-    const char *lc_collate  = getenv ("LC_COLLATE");
-    const char *lc_ctype    = getenv ("LC_CTYPE");
-    const char *lc_messages = getenv ("LC_MESSAGES");
-    const char *lc_time     = getenv ("LC_TIME");
-    const char *tz          = getenv ("TZ");
 
     char *dir = NULL;
     file_info_t *files = NULL;
@@ -521,16 +598,33 @@ ls_main (int argc, char **argv)
     files = malloc (file_count * sizeof (*files));
     (void)dir_content (files, file_count, dir);
 
+    if (!(s_conf & HIDDEN))
+    {
+        file_count = filter (files, file_count, sizeof (*files), filter_hidden);
+    }
+
+    qsort (files, file_count, sizeof (*files), sort_alphabetical);
     if (s_conf & SORT_TIME)
     {
         qsort (files, file_count, sizeof (*files), sort_date);
     }
-    else
-    {
-        qsort (files, file_count, sizeof (*files), sort_alphabetical);
-    }
 
-    long_mode (files, file_count, dir);
+    if (s_conf & LONG_MODE)
+    {
+        long_mode (files, file_count, dir);
+    }
+    else if (s_conf & COLUMN_MODE)
+    {
+        column_mode (files, file_count, dir);
+    }
+    else if (s_conf & SINGLE_MODE)
+    {
+        single_mode (files, file_count, dir);
+    }
+    else 
+    {
+        single_mode (files, file_count, dir);
+    }
 
     /* free files */
 
