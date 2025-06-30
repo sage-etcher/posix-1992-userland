@@ -88,14 +88,17 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 char *
 strdup (const char *src)
 {
+    /* {{{ */
     size_t n = strlen (src);
     char *dst = malloc (n + 1);
     return memcpy (dst, src, n+1);
+    /* }}} */
 }
 
 size_t 
 lu_len (long unsigned lu)
 {
+    /* {{{ */
     size_t n = 0;
 
     if (lu == 0) return 1;
@@ -103,11 +106,13 @@ lu_len (long unsigned lu)
     for (n = 0; lu > 0; lu /= 10, n++);
 
     return n;
+    /* }}} */
 }
 
 size_t 
 snprintlu (char *buf, size_t n, long unsigned lu)
 {
+    /* {{{ */
     size_t i = 0;
     size_t size = lu_len (lu);
     char *iter = &buf[n-1];
@@ -122,15 +127,18 @@ snprintlu (char *buf, size_t n, long unsigned lu)
     buf[n] = '\0';
 
     return size;
+    /* }}} */
 }
 
 char *
 snprintlu_dup (long unsigned lu)
 {
+    /* {{{ */
     size_t size = lu_len (lu);
     char *buf = malloc (size + 1);
     (void)snprintlu (buf, size, lu);
     return buf;
+    /* }}} */
 }
 
 
