@@ -62,9 +62,13 @@ static int s_conf = 0;
 
 static int sort_alphabetical (const void *a, const void *b);
 static int sort_date (const void *a, const void *b);
-static int filter_hidden (void *a);
-static void map_free_str_array (void *a);
-static void map_free_long_fmt (void *a);
+static int filter_hidden (void *cb_data, void *a);
+static int filter_non_directories (void *cb_data, void *a);
+static int filter_special_directories (void *cb_data, void *a);
+static void map_free_str_array (void *cb_data, void *a);
+static void map_free_long_fmt (void *cb_data, void *a);
+static void map_add_path (void *cb_data, void *a);
+static void map_print_str_array (void *cb_data, void *a);
 
 static char *get_file_mode (mode_t file_mode);
 static double check_oldest (time_t file_time, time_t now);
@@ -82,7 +86,7 @@ static int list_directories (char **dirs, size_t n, int first);
 
 /* generic */
 size_t
-filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
+filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *cb_data, void *a), void *cb_data)
 {
     /* {{{ */
     unsigned char *src = arr;
@@ -91,7 +95,7 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 
     for (; elem_count > 0; elem_count--)
     {
-        if (cb (src))
+        if (cb (cb_data, src))
         {
             (void)memcpy (dst, src, elem_size);
             dst += elem_size;
@@ -105,14 +109,14 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 }
 
 void
-map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *a))
+map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *cb_data, void *a), void *cb_data)
 {
     /* {{{ */
     unsigned char *iter = arr;
 
     for (; elem_count > 0; elem_count--)
     {
-        cb (iter);
+        cb (cb_data, iter);
         iter += elem_size;
     }
     /* }}} */
@@ -299,42 +303,100 @@ sort_date (const void *a, const void *b)
 }
 
 static int
-filter_hidden (void *a)
+filter_hidden (void *cb_data, void *a)
 {
     /* {{{ */
     char **filename = a;
     int result = (**filename != '.');
     
+    UNUSED (cb_data);
+    
     /* free non matches */
     if (!result)
     {
         free (*filename);
+        *filename = NULL;
     }
 
     return result;
     /* }}} */
 }
 
-static void
-map_free_str_array (void *a)
+static int
+filter_special_directories (void *cb_data, void *a)
 {
     /* {{{ */
+    file_stat_t *stat = a;
+    int result0 = (strcmp (stat->filename, "..") != 0);
+    int result1 = (strcmp (stat->filename, ".") != 0);
+
+    UNUSED (cb_data);
+
+    return result0 && result1;
+    /* }}} */
+}
+
+static int
+filter_non_directories (void *cb_data, void *a)
+{
+    /* {{{ */
+    file_stat_t *stat = a;
+    int result = S_ISDIR (stat->stat.st_mode);
+    UNUSED (cb_data);
+    return result;
+    /* }}} */
+}
+
+static void
+map_free_str_array (void *cb_data, void *a)
+{
+    /* {{{ */
+    UNUSED (cb_data);
     free (*(char **)a);
+    *(char **)a = NULL;
     /* }}} */
 }
 
 static void 
-map_free_long_fmt (void *a)
+map_free_long_fmt (void *cb_data, void *a)
 {
     /* {{{ */
     long_fmt_t *fmt = a;
-    free (fmt->date);
-    free (fmt->group);
-    free (fmt->mode);
-    free (fmt->owner);
+    UNUSED (cb_data);
+    free (fmt->date); fmt->date = NULL;
+    free (fmt->group); fmt->group = NULL;
+    free (fmt->mode); fmt->mode = NULL;
+    free (fmt->owner); fmt->owner = NULL;
     /* }}} */
 }
 
+static void
+map_add_path (void *cb_data, void *a)
+{
+    char *dir = cb_data;
+    file_stat_t *stat = a;
+    char *new_filename = strdup (add_child (dir, stat->filename));
+    UNUSED (cb_data);
+    stat->filename = new_filename;
+}
+
+static void 
+map_print_str_array (void *cb_data, void *a)
+{
+    file_stat_t *stat = a;
+    char *dir = cb_data;
+
+    printf ("%s: %s\n", dir, stat->filename);
+}
+
+static void
+map_free_file_stat (void *cb_data, void *a)
+{
+    file_stat_t *stat = a;
+    UNUSED (cb_data);
+    free (stat->filename);
+    stat->filename = NULL;
+}
 
 /* ls exclusive */
 static char *
@@ -512,8 +574,8 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
                 get_file_suffix (iter->stat.st_mode));
     }
 
-    map (fmt, n, sizeof (*fmt), map_free_long_fmt);
-    free (fmt);
+    map (fmt, n, sizeof (*fmt), map_free_long_fmt, NULL);
+    free (fmt); fmt = NULL;
     return 0;
     /* }}} */
 }
@@ -643,6 +705,7 @@ list_files (char **files, size_t n, char *dir)
     /* {{{ */
     size_t i = 0;
     file_stat_t *stats = malloc (n * sizeof (file_stat_t));
+    char **recurse_buf = NULL;
 
     /* get stats on all the files */
     for (i = 0; i < n; i++)
@@ -689,7 +752,28 @@ list_files (char **files, size_t n, char *dir)
         single_mode (stats, n, dir);
     }
 
-    free (stats);
+    /* recursive */
+    if (s_conf & RECURSIVE)
+    {
+        n = filter (stats, n, sizeof (*stats), filter_non_directories, NULL);
+        map (stats, n, sizeof (*stats), map_print_str_array, "non_directories");
+        n = filter (stats, n, sizeof (*stats), filter_special_directories, NULL);
+        map (stats, n, sizeof (*stats), map_print_str_array, "special_directories");
+        map (stats, n, sizeof (*stats), map_add_path, dir);
+        map (stats, n, sizeof (*stats), map_print_str_array, "add_path");
+
+        recurse_buf = malloc (n * sizeof (char *));
+        for (i = 0; i < n; i++)
+        {
+            recurse_buf[i] = stats[i].filename;
+        }
+        list_directories (recurse_buf, n, 0);
+
+        free (recurse_buf); recurse_buf = NULL;
+        map (stats, n, sizeof (*stats), map_free_file_stat, NULL); 
+    }
+
+    free (stats); stats = NULL;
     return 0;
     /* }}} */
 }
@@ -705,14 +789,14 @@ list_directory (char *dir)
     /* remove hidden files */
     if (!(s_conf & HIDDEN))
     {
-        n_entries = filter (entries, n_entries, sizeof (*entries), filter_hidden);
+        n_entries = filter (entries, n_entries, sizeof (*entries), filter_hidden, NULL);
     }
 
     /* list the contents */
     list_files (entries, n_entries, dir);
 
-    map (entries, n_entries, sizeof (*entries), map_free_str_array);
-    free (entries);
+    map (entries, n_entries, sizeof (*entries), map_free_str_array, NULL);
+    free (entries); entries = NULL;
 
     return 0;
     /* }}} */
@@ -726,7 +810,7 @@ list_directories (char **dirs, size_t n, int first)
 
     for (i = 0; i < n; i++, dirs++)
     {
-        if (n > 0) 
+        if ((n > 1) || (s_conf & RECURSIVE))
         {
             if (!first) printf ("\n");
             printf ("%s:\n", *dirs);

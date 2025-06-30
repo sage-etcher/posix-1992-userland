@@ -6,8 +6,8 @@
 #include <pwd.h>
 #include <stddef.h>
 
-size_t filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a));
-void map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *a));
+size_t filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *cb_data, void *a), void *cb_data);
+void map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *cb_data, void *a), void *cb_data);
 char *strdup (const char *src);
 size_t lu_len (long unsigned lu);
 size_t snprintlu (char *buf, size_t n, long unsigned lu);
