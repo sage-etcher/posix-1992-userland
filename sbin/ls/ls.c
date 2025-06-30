@@ -60,6 +60,26 @@ typedef struct {
 
 static int s_conf = 0;
 
+static int sort_alphabetical (const void *a, const void *b);
+static int sort_date (const void *a, const void *b);
+static int filter_hidden (void *a);
+static void map_free_str_array (void *a);
+static void map_free_long_fmt (void *a);
+
+static char *get_file_mode (mode_t file_mode);
+static double check_oldest (time_t file_time, time_t now);
+static double check_future (time_t file_time, time_t now);
+static char *get_date (time_t file_time);
+static char get_file_suffix (mode_t mode);
+static int long_mode (file_stat_t *stats, size_t n, const char *dir);
+static int column_mode (file_stat_t *stats, size_t n, const char *dir);
+static int single_mode (file_stat_t *stats, size_t n, const char *dir);
+static int get_config (int argc, char **argv, int *p_conf);
+static int list_files (char **files, size_t n, char *dir);
+static int list_directory (char *dir);
+static int list_directories (char **dirs, size_t n, int first);
+
+
 /* generic */
 size_t
 filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
@@ -254,7 +274,7 @@ get_group_name (gid_t gid)
 
 
 /* ls callbacks */
-int 
+static int 
 sort_alphabetical (const void *a, const void *b)
 {
     /* {{{ */
@@ -266,7 +286,7 @@ sort_alphabetical (const void *a, const void *b)
     /* }}} */
 }
 
-int 
+static int 
 sort_date (const void *a, const void *b)
 {
     /* {{{ */
@@ -278,7 +298,7 @@ sort_date (const void *a, const void *b)
     /* }}} */
 }
 
-int
+static int
 filter_hidden (void *a)
 {
     /* {{{ */
@@ -295,7 +315,7 @@ filter_hidden (void *a)
     /* }}} */
 }
 
-void
+static void
 map_free_str_array (void *a)
 {
     /* {{{ */
@@ -303,7 +323,7 @@ map_free_str_array (void *a)
     /* }}} */
 }
 
-void 
+static void 
 map_free_long_fmt (void *a)
 {
     /* {{{ */
@@ -317,7 +337,7 @@ map_free_long_fmt (void *a)
 
 
 /* ls exclusive */
-char *
+static char *
 get_file_mode (mode_t file_mode)
 {
     /* {{{ */
@@ -361,7 +381,7 @@ get_file_mode (mode_t file_mode)
     /* }}} */
 }
 
-double 
+static double 
 check_oldest (time_t file_time, time_t now)
 {
     /* {{{ */
@@ -381,7 +401,7 @@ check_oldest (time_t file_time, time_t now)
     /* }}} */
 }
 
-double 
+static double 
 check_future (time_t file_time, time_t now)
 {
     /* {{{ */
@@ -389,7 +409,7 @@ check_future (time_t file_time, time_t now)
     /* }}} */
 }
 
-char *
+static char *
 get_date (time_t file_time)
 {
     /* {{{ */
@@ -415,7 +435,7 @@ get_date (time_t file_time)
     /* }}} */
 }
 
-char
+static char
 get_file_suffix (mode_t mode)
 {
     /* {{{ */
@@ -440,7 +460,7 @@ get_file_suffix (mode_t mode)
     /* }}} */
 }
 
-int
+static int
 long_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
@@ -498,7 +518,7 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
     /* }}} */
 }
 
-int 
+static int 
 column_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
@@ -510,7 +530,7 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     /* }}} */
 }
 
-int 
+static int 
 single_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
@@ -542,7 +562,7 @@ single_mode (file_stat_t *stats, size_t n, const char *dir)
     /* }}} */
 }
 
-int
+static int
 get_config (int argc, char **argv, int *p_conf)
 { 
     /* {{{ */
@@ -617,7 +637,7 @@ get_config (int argc, char **argv, int *p_conf)
     /* }}} */
 }
 
-int
+static int
 list_files (char **files, size_t n, char *dir)
 {
     /* {{{ */
@@ -674,7 +694,7 @@ list_files (char **files, size_t n, char *dir)
     /* }}} */
 }
 
-int
+static int
 list_directory (char *dir)
 {
     /* {{{ */
@@ -698,7 +718,7 @@ list_directory (char *dir)
     /* }}} */
 }
 
-int
+static int
 list_directories (char **dirs, size_t n, int first)
 {
     /* {{{ */
