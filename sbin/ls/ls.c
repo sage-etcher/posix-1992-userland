@@ -756,11 +756,8 @@ list_files (char **files, size_t n, char *dir)
     if (s_conf & RECURSIVE)
     {
         n = filter (stats, n, sizeof (*stats), filter_non_directories, NULL);
-        map (stats, n, sizeof (*stats), map_print_str_array, "non_directories");
         n = filter (stats, n, sizeof (*stats), filter_special_directories, NULL);
-        map (stats, n, sizeof (*stats), map_print_str_array, "special_directories");
         map (stats, n, sizeof (*stats), map_add_path, dir);
-        map (stats, n, sizeof (*stats), map_print_str_array, "add_path");
 
         recurse_buf = malloc (n * sizeof (char *));
         for (i = 0; i < n; i++)
