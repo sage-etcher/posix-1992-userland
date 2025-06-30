@@ -373,29 +373,35 @@ map_free_long_fmt (void *cb_data, void *a)
 static void
 map_add_path (void *cb_data, void *a)
 {
+    /* {{{ */
     char *dir = cb_data;
     file_stat_t *stat = a;
     char *new_filename = strdup (add_child (dir, stat->filename));
     UNUSED (cb_data);
     stat->filename = new_filename;
+    /* }}} */
 }
 
 static void 
 map_print_str_array (void *cb_data, void *a)
 {
+    /* {{{ */
     file_stat_t *stat = a;
     char *dir = cb_data;
 
     printf ("%s: %s\n", dir, stat->filename);
+    /* }}} */
 }
 
 static void
 map_free_file_stat (void *cb_data, void *a)
 {
+    /* {{{ */
     file_stat_t *stat = a;
     UNUSED (cb_data);
     free (stat->filename);
     stat->filename = NULL;
+    /* }}} */
 }
 
 /* ls exclusive */
