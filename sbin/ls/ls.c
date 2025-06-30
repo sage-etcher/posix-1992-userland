@@ -86,27 +86,51 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
 }
 
 char *
-sprintf_dup (const char *fmt, ...)
+strdup (const char *src)
 {
-    /* {{{ */
-    char *buf = NULL;
+    size_t n = strlen (src);
+    char *dst = malloc (n + 1);
+    return memcpy (dst, src, n+1);
+}
+
+size_t 
+lu_len (long unsigned lu)
+{
     size_t n = 0;
 
-    va_list args, args_copy;
-    va_start (args, fmt);
-    va_start (args_copy, fmt);
+    if (lu == 0) return 1;
 
-    n = vsnprintf (NULL, 0, fmt, args);
-    buf = malloc (n + 1);
-    assert (buf != NULL);
+    for (n = 0; lu > 0; lu /= 10, n++);
 
-    (void)vsnprintf (buf, n+1, fmt, args_copy);
+    return n;
+}
 
-    va_end (args);
-    va_end (args_copy);
+size_t 
+snprintlu (char *buf, size_t n, long unsigned lu)
+{
+    size_t i = 0;
+    size_t size = lu_len (lu);
+    char *iter = &buf[n-1];
 
+    for (i = 0; i < n; i++)
+    {
+        *iter = '0' + (lu % 10);
+        iter--;
+        lu /= 10;
+    }
+
+    buf[n] = '\0';
+
+    return size;
+}
+
+char *
+snprintlu_dup (long unsigned lu)
+{
+    size_t size = lu_len (lu);
+    char *buf = malloc (size + 1);
+    (void)snprintlu (buf, size, lu);
     return buf;
-    /* }}} */
 }
 
 
@@ -116,7 +140,22 @@ add_child (const char *dir, const char *child)
 {
     /* {{{ */
     static char s_result[PATH_MAX+1] = { 0 };
-    (void)snprintf (s_result, PATH_MAX+1, "%s/%s", dir, child);
+    char *iter = s_result;
+    size_t len = 0;
+    
+    len = strlen (dir);
+    memcpy (iter, dir, len);
+    iter += len;
+
+    *iter = '/';
+    iter++;
+
+    len = strlen (child);
+    memcpy (iter, child, len);
+    iter += len;
+
+    *iter = '\0';
+
     return s_result; 
     /* }}} */
 }
@@ -170,10 +209,10 @@ get_user_name (uid_t uid)
     /* if the the user cannot be found */
     if (NULL == user)
     {
-        return sprintf_dup ("%u", uid);
+        return snprintlu_dup (uid);
     }
 
-    return sprintf_dup ("%s", user->pw_name);
+    return strdup (user->pw_name);
     /* }}} */
 }
 
@@ -189,10 +228,10 @@ get_group_name (gid_t gid)
     /* if the the group cannot be found */
     if (NULL == group)
     {
-        return sprintf_dup ("%u", gid);
+        return snprintlu_dup (gid);
     }
 
-    return sprintf_dup ("%s", group->gr_name);
+    return strdup (group->gr_name);
     /* }}} */
 }
 
@@ -236,7 +275,7 @@ get_file_mode (mode_t file_mode)
     buf[10] = ' ';
     buf[11] = '\0';
 
-    return sprintf_dup ("%s", buf);
+    return strdup (buf);
     /* }}} */
 }
 
@@ -290,7 +329,7 @@ get_date (time_t file_time)
 
     strftime (s_buf, 100, date_format, localtime (&file_time));
 
-    return sprintf_dup ("%s", s_buf);
+    return strdup (s_buf);
     /* }}} */
 }
 
@@ -330,13 +369,13 @@ file_info_new (file_info_t *self, const char *filepath, const char *filename)
         return -1;
     }
 
-    self->inode = sprintf_dup ("%lu", header.st_ino);
-    self->mode  = get_file_mode (header.st_mode);
-    self->nlink = sprintf_dup ("%lu", header.st_nlink);
-    self->owner = get_user_name (header.st_uid);
+    self->inode = snprintlu_dup (header.st_ino);
+    self->mode  = get_file_mode  (header.st_mode);
+    self->nlink = snprintlu_dup (header.st_nlink);
+    self->owner = get_user_name  (header.st_uid);
     self->group = get_group_name (header.st_gid);
-    self->size  = sprintf_dup ("%ld", header.st_size);
-    self->name  = sprintf_dup ("%s", filename);
+    self->size  = snprintlu_dup (header.st_size);
+    self->name  = strdup (filename);
     self->suffix = get_file_suffix (header.st_mode);
 
     self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
