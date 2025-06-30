@@ -1,0 +1,48 @@
+
+.\" Manpage for shls.
+.\" Contact sage.message@email.com to correct errors or typos.
+.TH man 1 "30 Jun 2025" "0.1" "shls man page"
+.SH NAME
+shls
+.SH SYNOPSIS
+shls [-CFRacdilqrtu1][file...]
+.SH DESCRIPTION
+shls is an implementation of ls from the 1992 POSIX.2 userland standard.
+.SH OPTIONS
+-C  write entries into columns.
+
+-F  write a slish (/) after directories, an astrisk (*) after executables and 
+a vertical line (|) after FIFOs.
+
+-R  write directories recursively.
+
+-a  write all directory entries, including those that begin with a period (.).
+
+-c  use time of last modification of the file status information for writing 
+and sorting.
+
+-d  treat directories as files.
+
+-i  for each entry write the file inode number with the name.
+
+-l  (ell) write extra information about each entry (assumes -1 (one)).
+
+-q  replace all non-printable characters in entries with question marks (?).
+
+-r  reverse the sort order.
+
+-t  sort by time.
+
+-u  use time of last access for writing and sorting.
+
+-1  (one) write one entry per line
+.SH BUGS
+-C, -R, and -q are not yet implemented.
+
+-t does not fallback sorting by coallating sequence.
+
+Does not follow any environment variables for COLUMNS or LC_*.
+.SH AUTHOR
+Sage Hendricks (sage.message@email.com)  
+
+<https://github.com/sage-etcher/posix-1992-userland>
