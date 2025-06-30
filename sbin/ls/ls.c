@@ -6,6 +6,7 @@
 #include <linux/limits.h>
 #include <dirent.h>
 #include <grp.h>
+#include <math.h>
 #include <pwd.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -614,10 +615,66 @@ static int
 column_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
-    UNUSED (stats);
-    UNUSED (n);
+    size_t i = 0;
+    size_t j = 0;
+    size_t index = 0;
+    file_stat_t *iter = NULL;
+    int column_width = 0;
+    int inode_width = 0;
+    int file_width = 0;
+    int tmp_width = 0;
+
+    const char *seperator = " : ";
+    const int terminal_width = 80;
+    int rows = 0;
+    int columns = 0;
+
     UNUSED (dir);
-    printf ("[todo: column_mode()]\n");
+
+    for (i = 0, iter = stats; i < n; i++, iter++)
+    {
+        file_width  = MAX (file_width,  (int)strlen (stats[i].printable));
+
+        tmp_width = 0;
+        tmp_width += file_width;
+        
+        if (s_conf & INODE_MODE)
+        {
+            inode_width = MAX (inode_width, (int)lu_len (stats[i].stat.st_ino));
+            tmp_width += inode_width;
+        }
+
+        /* SUFFIXES */
+        tmp_width++;
+
+        column_width = MAX (column_width, (int)tmp_width);
+    }
+
+    columns = terminal_width / (column_width + (int)strlen (seperator));
+    rows = (int)ceil((double)n / columns);
+
+    for (i = 0; (int)i < rows; i++)
+    {
+        for (j = 0; (int)j < columns; j++)
+        {
+            index = (int)j * columns + (int)i;
+            iter = &stats[index];
+            if (index >= n) continue;
+
+            if (s_conf & INODE_MODE) printf ("%*lu ", inode_width, iter->stat.st_ino);
+
+            printf ("%-*s%c",
+                    file_width, iter->printable,
+                    get_file_suffix (iter->stat.st_mode));
+
+            if (((int)j + 1 == columns) || (index + 1 == n)) continue;
+
+            printf ("%s", seperator);
+        }
+
+        printf ("\n");
+    }
+
     return -1;
     /* }}} */
 }
