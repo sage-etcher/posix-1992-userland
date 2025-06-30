@@ -5,9 +5,12 @@ include makefile.depend
 MANNUM = `echo "$(MAN)" |rev |cut -c 1`
 FULL_MANDIR := $(MANDIR)/man$(MANNUM)
 
+all: build
+
 build: $(PROG) $(MAN).gz
 
 clean:
+	rm -f $(OBJS)
 	rm -f $(PROG)
 	rm -f $(MAN).gz
 
@@ -26,8 +29,11 @@ depend: makefile.depend
 debug:
 	echo "$(FULL_MANDIR)"
 
-$(PROG): $(SRCS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SRCS)
+$(PROG): $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(MAN).gz: $(MAN)
 	-gzip -k9f $(MAN)
