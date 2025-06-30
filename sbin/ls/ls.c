@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 2
 
 #include <assert.h>
+#include <ctype.h>
 #include <linux/limits.h>
 #include <dirent.h>
 #include <grp.h>
@@ -46,6 +47,7 @@ enum {
 
 typedef struct {
     char *filename;
+    char *printable;
     struct stat stat;
     time_t time;
 } file_stat_t;
@@ -404,6 +406,17 @@ map_free_file_stat (void *cb_data, void *a)
     /* }}} */
 }
 
+static void
+map_make_printable (void *cb_data, void *a)
+{
+    /* {{{ */
+    char *c = a;
+    UNUSED (cb_data);
+    if (!isprint (*c)) *c = '?';
+    /* }}} */
+}
+
+
 /* ls exclusive */
 static char *
 get_file_mode (mode_t file_mode)
@@ -446,6 +459,17 @@ get_file_mode (mode_t file_mode)
     buf[11] = '\0';
 
     return strdup (buf);
+    /* }}} */
+}
+
+static char *
+get_printable_filename (char *src)
+{
+    /* {{{ */
+    char *dst = strdup (src);
+    if (!(s_conf & PRINTABLE)) return dst;
+    map (dst, strlen (dst), sizeof (char), map_make_printable, NULL);
+    return dst;
     /* }}} */
 }
 
@@ -678,6 +702,10 @@ get_config (int argc, char **argv, int *p_conf)
             ENABLE_BFLAG (config, LONG_MODE);
             break;
 
+        case 'q':
+            ENABLE_BFLAG (config, PRINTABLE);
+            break;
+
         case 'r':
             ENABLE_BFLAG (config, SORT_REVERSE);
             break;
@@ -717,6 +745,7 @@ list_files (char **files, size_t n, char *dir)
     for (i = 0; i < n; i++)
     {
         stats[i].filename = files[i];
+        stats[i].printable = get_printable_filename (stats[i].filename);
         (void)stat (add_child (dir, files[i]), &stats[i].stat);
 
         /* time to use */
