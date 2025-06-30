@@ -1,6 +1,4 @@
 
-#USE_SBIN=	true
-
 PROG=	ls
 SRCS=	ls.c
 OBJS=	ls.o
