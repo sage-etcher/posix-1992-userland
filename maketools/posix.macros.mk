@@ -1,6 +1,6 @@
 
 CC	?= clang
-CFLAGS	?= -O2 -pipe -Wall -Wextra -Wpedantic -std=c89
+CFLAGS	?= -O2 -pipe -Wall -Wextra -Wpedantic -pedantic-errors -std=c89
 LFLAGS	?= -ggdb
 
 DESTDIR	?=
