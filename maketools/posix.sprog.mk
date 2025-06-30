@@ -30,7 +30,7 @@ $(PROG): $(SRCS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SRCS)
 
 $(MAN).gz: $(MAN)
-	-gzip -k9 $(MAN)
+	-gzip -k9f $(MAN)
 
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
