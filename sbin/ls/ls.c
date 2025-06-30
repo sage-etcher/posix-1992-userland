@@ -365,6 +365,7 @@ get_file_suffix (mode_t mode)
     return ' ';
     /* }}} */
 }
+
 int
 file_info_new (file_info_t *self, const char *filepath, const char *filename)
 {
@@ -561,6 +562,7 @@ single_mode (file_info_t *files, size_t file_count, const char *dir)
     return 0;
     /* }}} */
 }
+
 int
 get_config (int argc, char **argv, int *p_conf)
 { 
