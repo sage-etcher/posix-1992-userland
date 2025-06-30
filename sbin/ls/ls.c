@@ -34,7 +34,7 @@ enum {
     SINGLE_MODE = 1 << 13,
 
     PRINT_MODES = COLUMN_MODE | LONG_MODE | SINGLE_MODE,
-    TIME_MODES  = FILE_STATUS | FILE_ACCESS,
+    TIME_MODES  = FILE_STATUS | FILE_ACCESS
     /* }}} */
 }; 
 
@@ -43,6 +43,7 @@ enum {
 #define IS_BFLAG(var, flag)         ((var) & (flag))
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define UNUSED(x) ((void)(x))
 
 typedef struct {
     char *inode;
@@ -93,7 +94,7 @@ sprintf_dup (const char *fmt, ...)
 
     va_list args, args_copy;
     va_start (args, fmt);
-    va_copy (args_copy, args);
+    va_start (args_copy, fmt);
 
     n = vsnprintf (NULL, 0, fmt, args);
     buf = malloc (n + 1);
@@ -162,7 +163,6 @@ get_user_name (uid_t uid)
 {
     /* {{{ */
     struct passwd *user = NULL;
-    const char *name = NULL;
 
     /* get data about the user */
     user = getpwuid (uid);
@@ -182,7 +182,6 @@ get_group_name (gid_t gid)
 {
     /* {{{ */
     struct group *group = NULL;
-    const char *name = NULL;
 
     /* get data about the group */
     group = getgrgid (gid);
@@ -430,6 +429,7 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
     file_info_t *iter = NULL;
     size_t i = 0;
 
+    UNUSED (dir);
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
     {
@@ -446,7 +446,7 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
 
     if (!(s_conf & NO_DIRECTORY))
     {
-        printf ("total %zu\n", total_blocks);
+        printf ("total %lu\n", total_blocks);
     }
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
@@ -475,6 +475,9 @@ int
 column_mode (file_info_t *files, size_t file_count, const char *dir)
 {
     /* {{{ */
+    UNUSED (files);
+    UNUSED (file_count);
+    UNUSED (dir);
     printf ("[todo: column_mode()]\n");
     return -1;
     /* }}} */
@@ -488,6 +491,8 @@ single_mode (file_info_t *files, size_t file_count, const char *dir)
 
     file_info_t *iter = NULL;
     size_t i = 0;
+
+    UNUSED (dir);
 
     for (i = 0, iter = files; i < file_count; i++, iter++)
     {
@@ -579,7 +584,6 @@ get_config (int argc, char **argv, int *p_conf)
 
     }
 
-exit:
     *p_conf = config;
     return optind;
     /* }}} */
@@ -590,8 +594,6 @@ ls_main (int argc, char **argv)
 {
     /* {{{ */
     int i = 0;
-    const char *columns     = getenv ("COLUMNS");
-
     char *dir = NULL;
     file_info_t *files = NULL;
     size_t file_count = 0;
