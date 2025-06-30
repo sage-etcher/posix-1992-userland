@@ -22,5 +22,3 @@ int ls_main (int argc, char **argv);
 
 #endif
 /* end of file */
-
-

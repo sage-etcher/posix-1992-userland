@@ -501,7 +501,7 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
             printf ("%*lu ", max_widths[0], iter->stat.st_ino);
         }
 
-        printf ("%s %*lu %*s %*s %*lu %s %s%c\n",
+        printf ("%s %*lu %-*s %-*s %*lu %s %s%c\n",
                 fmt[i].mode, 
                 max_widths[1], iter->stat.st_nlink, 
                 max_widths[2], fmt[i].owner, 
