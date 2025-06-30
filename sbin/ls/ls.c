@@ -6,7 +6,6 @@
 #include <dirent.h>
 #include <grp.h>
 #include <pwd.h>
-#include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,18 +45,18 @@ enum {
 #define UNUSED(x) ((void)(x))
 
 typedef struct {
-    char *inode;
-    char *mode;
-    char *nlink;
+    char *filename;
+    struct stat stat;
+    time_t time;
+} file_stat_t;
+    
+typedef struct {
+    char *mode; /* char[12] = "drwxrwxrwx " */
     char *owner;
     char *group;
-    char *size;
-    char *date;
-    char *name;
-    char suffix;
-    time_t time;
-    size_t blocks;
-} file_info_t;
+    char *date; /* char[13] = "Mon DD HH:MM" or "Mon DD  YYYY" */
+} long_fmt_t;
+
 
 static int s_conf = 0;
 
@@ -82,6 +81,20 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *a))
     }
 
     return count;
+    /* }}} */
+}
+
+void
+map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *a))
+{
+    /* {{{ */
+    unsigned char *iter = arr;
+
+    for (; elem_count > 0; elem_count--)
+    {
+        cb (iter);
+        iter += elem_size;
+    }
     /* }}} */
 }
 
@@ -168,43 +181,39 @@ add_child (const char *dir, const char *child)
     /* }}} */
 }
 
-
-/* ls callbacks */
-int 
-sort_alphabetical (const void *a, const void *b)
-{
-    /* {{{ */
-    const file_info_t *file0 = a;
-    const file_info_t *file1 = b;
-    int result = strcmp (file0->name, file1->name);
-    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
-    return result;
-    /* }}} */
-}
-
-int 
-sort_date (const void *a, const void *b)
-{
-    /* {{{ */
-    const file_info_t *file0 = a;
-    const file_info_t *file1 = b;
-    int result = -(int)difftime (file0->time, file1->time);
-    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
-    return result;
-    /* }}} */
-}
-
 int
-filter_hidden (void *a)
+dir_content (char **buf, size_t n, const char dirname[])
 {
     /* {{{ */
-    file_info_t *file = a;
-    return (*file->name != '.');
+    DIR *dir = opendir (dirname);
+    struct dirent *dirent = NULL;
+    size_t count = 0;
+
+    if (dir == NULL)
+    {
+        perror ("cannot read directory");
+        return -1;
+    }
+
+    /* iterate over the directory contents */
+    while ((dirent = readdir (dir)) != NULL)
+    {
+        count++;
+        if (buf == NULL) continue;
+        if (count > n) 
+        { 
+            closedir (dir);
+            return count; 
+        }
+        
+        *buf++ = strdup (dirent->d_name);
+    }
+
+    closedir (dir);
+    return count;
     /* }}} */
 }
 
-
-/* ls exclusive */
 char *
 get_user_name (uid_t uid)
 {
@@ -243,6 +252,71 @@ get_group_name (gid_t gid)
     /* }}} */
 }
 
+
+/* ls callbacks */
+int 
+sort_alphabetical (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_stat_t *file0 = a;
+    const file_stat_t *file1 = b;
+    int result = strcmp (file0->filename, file1->filename);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
+int 
+sort_date (const void *a, const void *b)
+{
+    /* {{{ */
+    const file_stat_t *file0 = a;
+    const file_stat_t *file1 = b;
+    int result = -(int)difftime (file0->time, file1->time);
+    result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
+    return result;
+    /* }}} */
+}
+
+int
+filter_hidden (void *a)
+{
+    /* {{{ */
+    char **filename = a;
+    int result = (**filename != '.');
+    
+    /* free non matches */
+    if (!result)
+    {
+        free (*filename);
+    }
+
+    return result;
+    /* }}} */
+}
+
+void
+map_free_str_array (void *a)
+{
+    /* {{{ */
+    free (*(char **)a);
+    /* }}} */
+}
+
+void 
+map_free_long_fmt (void *a)
+{
+    /* {{{ */
+    long_fmt_t *fmt = a;
+    free (fmt->date);
+    free (fmt->group);
+    free (fmt->mode);
+    free (fmt->owner);
+    /* }}} */
+}
+
+
+/* ls exclusive */
 char *
 get_file_mode (mode_t file_mode)
 {
@@ -367,129 +441,32 @@ get_file_suffix (mode_t mode)
 }
 
 int
-file_info_new (file_info_t *self, const char *filepath, const char *filename)
+long_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
-    struct stat header = { 0 };
-
-    if (0 != stat (filepath, &header))
-    {
-        perror ("cannot stat file");
-        return -1;
-    }
-
-    self->inode = snprintlu_dup (header.st_ino);
-    self->mode  = get_file_mode  (header.st_mode);
-    self->nlink = snprintlu_dup (header.st_nlink);
-    self->owner = get_user_name  (header.st_uid);
-    self->group = get_group_name (header.st_gid);
-    self->size  = snprintlu_dup (header.st_size);
-    self->name  = strdup (filename);
-    self->suffix = get_file_suffix (header.st_mode);
-
-    self->time  = (s_conf & FILE_ACCESS) ? header.st_atime 
-                                         : header.st_mtime;
-
-    self->date = get_date (self->time);
-
-    self->blocks = header.st_blocks;
-
-    return 0;
-    /* }}} */
-}
-
-void
-file_info_destroy (file_info_t *self)
-{
-    /* {{{ */
-    if (self == NULL) return;
-
-    free (self->inode);
-    free (self->mode);
-    free (self->nlink);
-    free (self->owner);
-    free (self->group);
-    free (self->size);
-    free (self->date);
-    free (self->name);
-    /* }}} */
-}
-
-size_t
-dir_size (const char dirname[])
-{
-    /* {{{ */
-    DIR *dir = opendir (dirname);
-    struct dirent *dirent = NULL;
-    size_t count = 0;
-
-    /* iterate over the directory contents */
-    while ((dirent = readdir (dir)) != NULL)
-    {
-        count++;
-    }
-
-    closedir (dir);
-    return count;
-    /* }}} */
-}
-
-int
-dir_content (file_info_t *buf, size_t n, const char dirname[])
-{
-    /* {{{ */
-    DIR *dir = opendir (dirname);
-    struct dirent *dirent = NULL;
-    size_t count = 0;
-  
-    if (dir == NULL)
-    {
-        perror ("cannot read directory");
-        return -1;
-    }
-
-    /* iterate over the directory contents */
-    while ((dirent = readdir (dir)) != NULL)
-    {
-        count++;
-        if (buf == NULL) continue;
-        if (count > n) 
-        { 
-            closedir (dir);
-            return count; 
-        }
-
-        file_info_new (buf++, add_child (dirname, dirent->d_name), dirent->d_name);
-    }
-
-    closedir (dir);
-    return count;
-    /* }}} */
-}
-
-int
-long_mode (file_info_t *files, size_t file_count, const char *dir)
-{
-    /* {{{ */
+    long_fmt_t *fmt = malloc (n * sizeof (long_fmt_t));
     int max_widths[7] = {0};
     size_t total_blocks = 0;
 
-    file_info_t *iter = NULL;
+    file_stat_t *iter = NULL;
     size_t i = 0;
 
     UNUSED (dir);
 
-    for (i = 0, iter = files; i < file_count; i++, iter++)
+    for (i = 0, iter = stats; i < n; i++, iter++)
     {
-        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->inode));
-        max_widths[1] = MAX (max_widths[1], (int)strlen (iter->mode));
-        max_widths[2] = MAX (max_widths[2], (int)strlen (iter->nlink));
-        max_widths[3] = MAX (max_widths[3], (int)strlen (iter->owner));
-        max_widths[4] = MAX (max_widths[4], (int)strlen (iter->group));
-        max_widths[5] = MAX (max_widths[5], (int)strlen (iter->size));
-        max_widths[6] = MAX (max_widths[6], (int)strlen (iter->date));
+        fmt[i].mode  = get_file_mode (iter->stat.st_mode);
+        fmt[i].owner = get_user_name (iter->stat.st_uid);
+        fmt[i].group = get_group_name (iter->stat.st_gid);
+        fmt[i].date  = get_date (iter->time);
 
-        total_blocks += iter->blocks;
+        max_widths[0] = MAX (max_widths[0], (int)lu_len (iter->stat.st_ino));
+        max_widths[1] = MAX (max_widths[1], (int)lu_len (iter->stat.st_nlink));
+        max_widths[2] = MAX (max_widths[2], (int)strlen (fmt[i].owner));
+        max_widths[3] = MAX (max_widths[3], (int)strlen (fmt[i].group));
+        max_widths[4] = MAX (max_widths[4], (int)lu_len (iter->stat.st_size));
+
+        total_blocks += iter->stat.st_blocks;
     }
 
     if (!(s_conf & NO_DIRECTORY))
@@ -497,34 +474,36 @@ long_mode (file_info_t *files, size_t file_count, const char *dir)
         printf ("total %lu\n", total_blocks);
     }
 
-    for (i = 0, iter = files; i < file_count; i++, iter++)
+    for (i = 0, iter = stats; i < n; i++, iter++)
     {
         if (s_conf & INODE_MODE)
         {
-            printf ("%*s ", max_widths[0], iter->inode);
+            printf ("%*lu ", max_widths[0], iter->stat.st_ino);
         }
 
-        printf ("%*s %*s %*s %*s %*s %*s %s%c\n",
-                max_widths[1], iter->mode, 
-                max_widths[2], iter->nlink, 
-                max_widths[3], iter->owner, 
-                max_widths[4], iter->group, 
-                max_widths[5], iter->size, 
-                max_widths[6], iter->date, 
-                iter->name,
-                iter->suffix);
+        printf ("%s %*lu %*s %*s %*lu %s %s%c\n",
+                fmt[i].mode, 
+                max_widths[1], iter->stat.st_nlink, 
+                max_widths[2], fmt[i].owner, 
+                max_widths[3], fmt[i].group, 
+                max_widths[4], iter->stat.st_size, 
+                fmt[i].date, 
+                iter->filename,
+                get_file_suffix (iter->stat.st_mode));
     }
 
+    map (fmt, n, sizeof (*fmt), map_free_long_fmt);
+    free (fmt);
     return 0;
     /* }}} */
 }
 
 int 
-column_mode (file_info_t *files, size_t file_count, const char *dir)
+column_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
-    UNUSED (files);
-    UNUSED (file_count);
+    UNUSED (stats);
+    UNUSED (n);
     UNUSED (dir);
     printf ("[todo: column_mode()]\n");
     return -1;
@@ -532,31 +511,31 @@ column_mode (file_info_t *files, size_t file_count, const char *dir)
 }
 
 int 
-single_mode (file_info_t *files, size_t file_count, const char *dir)
+single_mode (file_stat_t *stats, size_t n, const char *dir)
 {
     /* {{{ */
     int max_widths[1] = {0};
 
-    file_info_t *iter = NULL;
+    file_stat_t *iter = NULL;
     size_t i = 0;
 
     UNUSED (dir);
 
-    for (i = 0, iter = files; i < file_count; i++, iter++)
+    for (i = 0, iter = stats; i < n; i++, iter++)
     {
-        max_widths[0] = MAX (max_widths[0], (int)strlen (iter->inode));
+        max_widths[0] = MAX (max_widths[0], (int)lu_len (iter->stat.st_ino));
     }
 
-    for (i = 0, iter = files; i < file_count; i++, iter++)
+    for (i = 0, iter = stats; i < n; i++, iter++)
     {
         if (s_conf & INODE_MODE)
         {
-            printf ("%*s ", max_widths[0], iter->inode);
+            printf ("%*lu ", max_widths[0], iter->stat.st_ino);
         }
 
         printf ("%s%c\n",
-                iter->name,
-                iter->suffix);
+                iter->filename,
+                get_file_suffix (iter->stat.st_mode));
     }
 
     return 0;
@@ -639,105 +618,136 @@ get_config (int argc, char **argv, int *p_conf)
 }
 
 int
-ls_main (int argc, char **argv)
+list_files (char **files, size_t n, char *dir)
 {
     /* {{{ */
-    int i = 0;
-    char *dir = NULL;
-    file_info_t *files = NULL;
-    size_t file_count = 0;
-    int dir_count = 0;
+    size_t i = 0;
+    file_stat_t *stats = malloc (n * sizeof (file_stat_t));
 
-    int n = get_config (argc, argv, &s_conf);
-
-    if (n <= 0) return -1;
-
-    /* set argc, argv to the first non-option argument */
-    argc -= n;
-    argv += n;
-    
-    if (argc <= 0)
+    /* get stats on all the files */
+    for (i = 0; i < n; i++)
     {
-        dir = ".";
-        dir_count = 1;
-    }
-    else
-    {
-        dir = *argv;
-        dir_count = argc;
-    }
-    
-    do 
-    {
-        if (s_conf & NO_DIRECTORY)
+        stats[i].filename = files[i];
+        (void)stat (add_child (dir, files[i]), &stats[i].stat);
+
+        /* time to use */
+        if (s_conf & FILE_ACCESS)
         {
-            file_count = dir_count;
-            files = malloc (file_count * sizeof (*files));
-
-            i = 0;
-            do
-            {
-                file_info_new (&files[i], dir, dir);
-                i++;
-                dir = argv[i];
-            }
-            while (i < argc);
-
-            argc = 0;
+            stats[i].time = stats[i].stat.st_atime;
         }
-        else
+        else if (s_conf & FILE_STATUS)
         {
-            if (dir_count > 1)
-            {
-                printf ("%s:\n", dir);
-            }
-
-            file_count = dir_content (NULL, 0, dir);
-            files = malloc (file_count * sizeof (*files));
-            (void)dir_content (files, file_count, dir);
-
-            if (!(s_conf & HIDDEN))
-            {
-                file_count = filter (files, file_count, sizeof (*files), filter_hidden);
-            }
-        }
-
-        qsort (files, file_count, sizeof (*files), sort_alphabetical);
-        if (s_conf & SORT_TIME)
-        {
-            qsort (files, file_count, sizeof (*files), sort_date);
-        }
-
-        if (s_conf & LONG_MODE)
-        {
-            long_mode (files, file_count, dir);
-        }
-        else if (s_conf & COLUMN_MODE)
-        {
-            column_mode (files, file_count, dir);
-        }
-        else if (s_conf & SINGLE_MODE)
-        {
-            single_mode (files, file_count, dir);
+            stats[i].time = stats[i].stat.st_ctime;
         }
         else 
         {
-            single_mode (files, file_count, dir);
+            stats[i].time = stats[i].stat.st_mtime;
         }
+    }
 
-        argc--;
-        argv++;
-        dir = *argv;
+    /* sort */
+    if (s_conf & SORT_TIME)
+    {
+        qsort (stats, n, sizeof (*stats), sort_date);
+    }
+    else 
+    {
+        qsort (stats, n, sizeof (*stats), sort_alphabetical);
+    }
 
-        if ((argc > 0) && (!(s_conf & NO_DIRECTORY)))
+    /* output */
+    if (s_conf & LONG_MODE)
+    {
+        long_mode (stats, n, dir);
+    }
+    else if (s_conf & COLUMN_MODE)
+    {
+        column_mode (stats, n, dir);
+    }
+    else 
+    {
+        single_mode (stats, n, dir);
+    }
+
+    free (stats);
+    return 0;
+    /* }}} */
+}
+
+int
+list_directory (char *dir)
+{
+    /* {{{ */
+    size_t n_entries = dir_content (NULL, 0, dir);
+    char **entries = malloc (n_entries * sizeof (char *));
+    dir_content (entries, n_entries, dir);
+
+    /* remove hidden files */
+    if (!(s_conf & HIDDEN))
+    {
+        n_entries = filter (entries, n_entries, sizeof (*entries), filter_hidden);
+    }
+
+    /* list the contents */
+    list_files (entries, n_entries, dir);
+
+    map (entries, n_entries, sizeof (*entries), map_free_str_array);
+    free (entries);
+
+    return 0;
+    /* }}} */
+}
+
+int
+list_directories (char **dirs, size_t n, int first)
+{
+    /* {{{ */
+    size_t i = 0;
+
+    for (i = 0; i < n; i++, dirs++)
+    {
+        if (n > 0) 
         {
-            printf ("\n");
+            if (!first) printf ("\n");
+            printf ("%s:\n", *dirs);
         }
 
-    } 
-    while (argc > 0);
+        (void)list_directory (*dirs);
 
-    /* free files */
+        first = 0;
+    }
+
+    return 0;
+    /* }}} */
+}
+
+int
+ls_main (int argc, char **argv)
+{
+    /* {{{ */
+    char *default_dir = ".";
+    int n = get_config (argc, argv, &s_conf);
+
+    if (n <= 0) return -1;
+    argc -= n;
+    argv += n;
+    
+    /* if no paths are given, default to current */
+    if (argc <= 0)
+    {
+        argv = &default_dir;
+        argc = 1;
+    }
+
+    /* list */
+    if (s_conf & NO_DIRECTORY)
+    {
+        list_files (argv, argc, "");
+    }
+    else
+    {
+        list_directories (argv, argc, 1);
+    }
 
     return 0;
     /* }}} */
