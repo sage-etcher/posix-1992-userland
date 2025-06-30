@@ -653,9 +653,9 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     columns = terminal_width / (column_width + (int)strlen (seperator));
     rows = (int)ceil((double)n / columns);
 
-    for (i = 0; (int)i < rows; i++)
+    for (i = 0; (int)i <= rows; i++)
     {
-        for (j = 0; (int)j < columns; j++)
+        for (j = 0; (int)j <= columns; j++)
         {
             index = (int)j * columns + (int)i;
             iter = &stats[index];
