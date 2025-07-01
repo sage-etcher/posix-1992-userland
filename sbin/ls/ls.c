@@ -744,7 +744,7 @@ get_config (int argc, char **argv, int *p_conf)
     if (isatty (1))
     {
         DISABLE_BFLAG (config, PRINT_MODES);
-        ENABLE_BFLAG (config, LONG_MODE);
+        ENABLE_BFLAG (config, COLUMN_MODE);
         ENABLE_BFLAG (config, PRINTABLE);
     }
 
