@@ -649,7 +649,6 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     int columns = 0;
 
     const char *env_columns = getenv ("COLUMNS");
-    printf ("columns is set to %s\n", env_columns);
     if (env_columns != NULL)
     {
         terminal_width = atoi (env_columns);
