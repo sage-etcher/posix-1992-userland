@@ -653,7 +653,6 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     columns = terminal_width / (column_width + (int)strlen (seperator));
     rows = (int)ceil((double)n / columns);
 
-    printf ("%lu %i %i\n", n, columns, rows);
     for (i = 0; (int)i < rows; i++)
     {
         for (j = 0; (int)j < columns; j++)
