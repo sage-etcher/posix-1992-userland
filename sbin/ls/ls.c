@@ -653,21 +653,22 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     columns = terminal_width / (column_width + (int)strlen (seperator));
     rows = (int)ceil((double)n / columns);
 
-    for (i = 0; (int)i <= rows; i++)
+    printf ("%lu %i %i\n", n, columns, rows);
+    for (i = 0; (int)i < rows; i++)
     {
-        for (j = 0; (int)j <= columns; j++)
+        for (j = 0; (int)j < columns; j++)
         {
-            index = (int)j * columns + (int)i;
-            iter = &stats[index];
+            index = i + j * (size_t)rows;
             if (index >= n) continue;
 
-            if (s_conf & INODE_MODE) printf ("%*lu ", inode_width, iter->stat.st_ino);
+            if (s_conf & INODE_MODE)
+            {
+                printf ("%*lu ", inode_width, stats[index].stat.st_ino);
+            }
 
-            printf ("%-*s%c",
-                    file_width, iter->printable,
-                    get_file_suffix (iter->stat.st_mode));
-
-            if (((int)j + 1 == columns) || (index + 1 == n)) continue;
+            printf ("%-*s%c", 
+                    file_width, stats[index].filename,
+                    get_file_suffix (stats[index].stat.st_mode));
 
             printf ("%s", seperator);
         }
