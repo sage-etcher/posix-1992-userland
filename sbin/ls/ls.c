@@ -625,9 +625,20 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     int tmp_width = 0;
 
     const char *seperator = " : ";
-    const int terminal_width = 80;
+    int terminal_width = 0;
     int rows = 0;
     int columns = 0;
+
+    const char *env_columns = getenv ("COLUMNS");
+    printf ("columns is set to %s\n", env_columns);
+    if (env_columns != NULL)
+    {
+        terminal_width = atoi (env_columns);
+    }
+    else 
+    {
+        terminal_width = 80;
+    }
 
     UNUSED (dir);
 
@@ -717,6 +728,14 @@ get_config (int argc, char **argv, int *p_conf)
     /* {{{ */
     int config = SINGLE_MODE | FILE_STATUS;
     int c = 0;
+
+    /* default settings for terminal device */
+    if (isatty (1))
+    {
+        DISABLE_BFLAG (config, PRINT_MODES);
+        ENABLE_BFLAG (config, LONG_MODE);
+        ENABLE_BFLAG (config, PRINTABLE);
+    }
 
     assert (p_conf != NULL);
 
@@ -839,9 +858,14 @@ list_files (char **files, size_t n, char *dir)
     {
         column_mode (stats, n, dir);
     }
-    else 
+    else if (s_conf & SINGLE_MODE)
     {
         single_mode (stats, n, dir);
+    }
+    else 
+    {
+        (void)fprintf (stderr, "ls: error no mode selected\n");
+        return -1;
     }
 
     /* recursive */
