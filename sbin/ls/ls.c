@@ -288,7 +288,10 @@ sort_alphabetical (const void *a, const void *b)
     /* {{{ */
     const file_stat_t *file0 = a;
     const file_stat_t *file1 = b;
+
+    /* TODO: character collation */
     int result = strcmp (file0->filename, file1->filename);
+
     result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
     return result;
     /* }}} */
@@ -852,13 +855,10 @@ list_files (char **files, size_t n, char *dir)
     }
 
     /* sort */
+    qsort (stats, n, sizeof (*stats), sort_alphabetical);
     if (s_conf & SORT_TIME)
     {
         qsort (stats, n, sizeof (*stats), sort_date);
-    }
-    else 
-    {
-        qsort (stats, n, sizeof (*stats), sort_alphabetical);
     }
 
     /* output */
