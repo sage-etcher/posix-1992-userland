@@ -73,6 +73,7 @@ static void map_free_long_fmt (void *cb_data, void *a);
 static void map_add_path (void *cb_data, void *a);
 static void map_print_str_array (void *cb_data, void *a);
 
+static char *get_printable_filename (char *src, mode_t mode);
 static char *get_file_mode (mode_t file_mode);
 static double check_oldest (time_t file_time, time_t now);
 static double check_future (time_t file_time, time_t now);
@@ -413,7 +414,7 @@ map_make_printable (void *cb_data, void *a)
     /* {{{ */
     char *c = a;
     UNUSED (cb_data);
-    if (!isprint (*c)) *c = '?';
+    if ((!isprint (*c)) || (*c == '\t')) *c = '?';
     /* }}} */
 }
 
@@ -464,12 +465,31 @@ get_file_mode (mode_t file_mode)
 }
 
 static char *
-get_printable_filename (char *src)
+get_printable_filename (char *src, mode_t mode)
 {
     /* {{{ */
-    char *dst = strdup (src);
+    size_t n = 0;
+    char *dst = NULL;
+    
+    n = strlen (src);
+    if (s_conf & SUFFIXES)
+    {
+        n++;
+    }
+
+    dst = malloc (n + 1);
+    (void)strcpy (dst, src);
+
+    if (s_conf & SUFFIXES)
+    {
+        dst[n-1] = get_file_suffix (mode);
+    }
+
+    dst[n] = '\0';
+
     if (!(s_conf & PRINTABLE)) return dst;
     map (dst, strlen (dst), sizeof (char), map_make_printable, NULL);
+
     return dst;
     /* }}} */
 }
@@ -594,15 +614,14 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
             printf ("%*lu ", max_widths[0], iter->stat.st_ino);
         }
 
-        printf ("%s %*lu %-*s %-*s %*lu %s %s%c\n",
+        printf ("%s %*lu %-*s %-*s %*lu %s %s\n",
                 fmt[i].mode, 
                 max_widths[1], iter->stat.st_nlink, 
                 max_widths[2], fmt[i].owner, 
                 max_widths[3], fmt[i].group, 
                 max_widths[4], iter->stat.st_size, 
                 fmt[i].date, 
-                iter->filename,
-                get_file_suffix (iter->stat.st_mode));
+                iter->printable);
     }
 
     map (fmt, n, sizeof (*fmt), map_free_long_fmt, NULL);
@@ -655,9 +674,6 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
             tmp_width += inode_width;
         }
 
-        /* SUFFIXES */
-        tmp_width++;
-
         column_width = MAX (column_width, (int)tmp_width);
     }
 
@@ -676,10 +692,7 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
                 printf ("%*lu ", inode_width, stats[index].stat.st_ino);
             }
 
-            printf ("%-*s%c", 
-                    file_width, stats[index].filename,
-                    get_file_suffix (stats[index].stat.st_mode));
-
+            printf ("%-*s", file_width, stats[index].printable);
             printf ("%s", seperator);
         }
 
@@ -713,9 +726,8 @@ single_mode (file_stat_t *stats, size_t n, const char *dir)
             printf ("%*lu ", max_widths[0], iter->stat.st_ino);
         }
 
-        printf ("%s%c\n",
-                iter->filename,
-                get_file_suffix (iter->stat.st_mode));
+        printf ("%s\n", iter->printable);
+                
     }
 
     return 0;
@@ -821,8 +833,8 @@ list_files (char **files, size_t n, char *dir)
     for (i = 0; i < n; i++)
     {
         stats[i].filename = files[i];
-        stats[i].printable = get_printable_filename (stats[i].filename);
         (void)stat (add_child (dir, files[i]), &stats[i].stat);
+        stats[i].printable = get_printable_filename (stats[i].filename, stats[i].stat.st_mode);
 
         /* time to use */
         if (s_conf & FILE_ACCESS)
