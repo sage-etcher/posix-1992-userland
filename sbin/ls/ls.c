@@ -643,7 +643,8 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
     int file_width = 0;
     int tmp_width = 0;
 
-    const char *seperator = " : ";
+    /* const char *seperator = " : "; */
+    const char *seperator = "  ";
     int terminal_width = 0;
     int rows = 0;
     int columns = 0;
