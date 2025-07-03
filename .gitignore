@@ -54,6 +54,7 @@ dkms.conf
 # ignore build junk
 *.gz
 makefile.depend
+.locale_done
 
 # ignore gettext junk
 *.pot
