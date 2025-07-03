@@ -3,7 +3,9 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <linux/limits.h>
+#include <libintl.h>
+#include <limits.h>
+#include <locale.h>
 #include <dirent.h>
 #include <grp.h>
 #include <math.h>
@@ -45,6 +47,18 @@ enum {
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 #define UNUSED(x) ((void)(x))
+
+#if !defined(DOMAIN_NAME) || !defined(DOMAIN_DIR)
+#   warning using default values for DOMAIN_NAME and DOMAIN_DIR
+#   define DOMAIN_NAME "ls"
+#   define DOMAIN_DIR  "/usr/local/share/locale"
+#endif
+
+#define cgettext(msg, category) dcgettext (DOMAIN_NAME, msg, category)
+#define _(msg)    gettext (msg)
+#define _t(msg)  cgettext (msg, LC_TIME)
+#define _c(msg)  cgettext (msg, LC_COLLATE)
+#define _ct(msg) cgettext (msg, LC_CTYPE)
 
 typedef struct {
     char *filename;
