@@ -304,7 +304,7 @@ sort_alphabetical (const void *a, const void *b)
     const file_stat_t *file1 = b;
 
     /* TODO: character collation */
-    int result = strcmp (file0->filename, file1->filename);
+    int result = strcoll (file0->filename, file1->filename);
 
     result *= ((s_conf & SORT_REVERSE) ? -1 : 1);
     return result;
