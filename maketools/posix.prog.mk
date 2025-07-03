@@ -58,10 +58,10 @@ debug:
 	echo "$(FULL_MANDIR)"
 
 $(PROG): $(OBJS)
-	$(CC) -o $@ $(LDFLAGS) $(OBJS)
+	$(CC) -o $@ $(LDOPTS) $(LDFLAGS) $(OBJS) $(LDADD)
 
 %.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(COPTS) $(CFLAGS)
 
 $(MAN).gz: $(MAN)
 	-gzip -k9f $(MAN)

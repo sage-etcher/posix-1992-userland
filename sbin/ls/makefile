@@ -7,7 +7,7 @@ SRCS=	ls.c
 OBJS=	ls.o
 MAN=	ls.1
 
-LDFLAGS=	-lm
+LDADD=	-lm
 
 include $(PROJECT_ROOT)/maketools/posix.prog.mk
 # vim: noet

@@ -1,7 +1,12 @@
 
 CC       ?= clang
-CFLAGS   ?= -O0 -pipe -Wall -Wextra -Wpedantic -pedantic-errors -std=c89
-LFLAGS   ?= -ggdb
+CFLAGS   := -Wall -Wextra -Wpedantic -pedantic-errors -std=c89 $(CFLAGS)
+COPTS    ?= -O0
+
+LDFLAGS  := $(LDFLAGS)
+LDADD    := $(LDADD)
+LDOPTS   ?= -ggdb
+
 
 DESTDIR  ?=
 PREFIX   ?= /usr/local
