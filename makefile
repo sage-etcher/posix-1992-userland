@@ -1,5 +1,5 @@
 
-PROJECT_ROOT := $(PWD)
+PROJECT_ROOT = `pwd`
 
 all: build
 
