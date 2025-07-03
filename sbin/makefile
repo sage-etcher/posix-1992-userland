@@ -5,9 +5,9 @@ EXTERN :=	"PROJECT_ROOT=$(PROJECT_ROOT)" \
 
 all: build
 
-build clean install uninstall depend debug:
+build clean locale install uninstall depend debug:
 	${MAKE} -C ls $@ -- $(EXTERN)
 
 
-.PHONY: build clean install uninstall depend debug
+.PHONY: build clean locale install uninstall depend debug
 # end of file 
