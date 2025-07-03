@@ -233,7 +233,7 @@ dir_content (char **buf, size_t n, const char dirname[])
 
     if (dir == NULL)
     {
-        perror ("cannot read directory");
+        perror (_("cannot read directory"));
         return -1;
     }
 
@@ -545,8 +545,8 @@ get_date (time_t file_time)
     /* {{{ */
     static char s_buf[100];
     const char *date_format = NULL;
-    const char *posix_new_fmt = "%b %e %H:%M";
-    const char *posix_old_fmt = "%b %e  %Y";
+    const char *posix_new_fmt = _t("%b %e %H:%M");
+    const char *posix_old_fmt = _t("%b %e  %Y");
     time_t now = time (NULL);
 
     if ((check_future (file_time, now) < 0) || 
@@ -621,7 +621,7 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
 
     if (!(s_conf & NO_DIRECTORY))
     {
-        printf ("total %lu\n", total_blocks);
+        printf (_("total %lu\n"), total_blocks);
     }
 
     for (i = 0, iter = stats; i < n; i++, iter++)
@@ -827,7 +827,7 @@ get_config (int argc, char **argv, int *p_conf)
 
         case '?':
         default:
-            (void)printf ("usage: ls [-CFRacdilqrtu1][file...]\n");
+            (void)printf (_("usage: ls [-CFRacdilqrtu1][file...]\n"));
             return -1;
         }
 
@@ -890,7 +890,7 @@ list_files (char **files, size_t n, char *dir)
     }
     else 
     {
-        (void)fprintf (stderr, "ls: error no mode selected\n");
+        (void)fprintf (stderr, _("ls: error no mode selected\n"));
         return -1;
     }
 
