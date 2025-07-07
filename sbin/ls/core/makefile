@@ -2,7 +2,7 @@
 CATEGORIES=	LC_MESSAGES
 LOCALES=	de en es fr it
 
-AS_SHARED=	true
+AS_STATIC=	true
 SO_VERSION=	0.1.0
 
 LIB=	ls
