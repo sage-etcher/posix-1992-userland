@@ -9,7 +9,7 @@ all: build
 
 build clean run depend debug:
 	@for d in $(SUBDIRS); do \
-	    $(MAKE) -C $$d $@ -- $(EXTERN); \
+	    $(MAKE) -C $$d $@ -- $(EXTERN) || exit; \
 	done
 
 .PHONY: build clean depend debug run
