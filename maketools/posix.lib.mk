@@ -1,0 +1,84 @@
+
+include $(PROJECT_ROOT)/maketools/posix.macros.mk
+include makefile.depend
+
+MANNUM = `echo "$(MAN)" |rev |cut -c 1`
+FULL_MANDIR := $(MANDIR)/man$(MANNUM)
+
+CATEGORIES 	?= none
+LOCALES 	?= en
+
+CFLAGS	+= '-DDOMAIN_NAME="$(LIB)"'
+CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
+
+STATIC_LIB	?=	lib$(LIB).a
+SHARED_LIB	?=	lib$(LIB).so
+
+all: build
+
+build: $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(SHARED_LIB)
+	rm -f $(STATIC_LIB)
+	rm -f $(MAN).gz
+	rm -f `find locale -name '*.mo'`
+	rm -f `find locale -name '*.pot'`
+
+locale:
+	$(PROJECT_ROOT)/buildtools/generate_locales.py \
+		--domainname $(LIB) \
+		--inputfiles `echo "$(SRCS)" |sed 's/ \+/,/g'` \
+		--locales    `echo "$(LOCALES)" |sed 's/ \+/,/g'` \
+		--categories `echo "$(CATEGORIES)" |sed 's/ \+/,/g'`
+
+install: build
+	install -d -D -m 0755 $(LIBDIR)
+	test -z "$(STATIC)" || install -m 0755 $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB)
+	test -z "$(SHARED)" || \
+		install -m 0755 $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB).$(SO_VERSION) && \
+		ln -f $(SHARED_LIB).$(SO_VERSION) $(LIBDIR)/$(SHARED_LIB)
+	test -z "$(MAN)" || install -d -D -m 0755 $(FULL_MANDIR)
+	test -z "$(MAN)" || install -m 0644 -t $(FULL_MANDIR) $(MAN).gz
+	for i in $(LOCALES); do \
+		for j in $(CATEGORIES); do \
+			install -d -D -m 0755 $(LOCDIR)/$$i/$$j; \
+			install -m 0644 ./locale/$$i/$$j/$(LIB).mo $(LOCDIR)/$$i/$$j/; \
+		done; \
+	done
+
+uninstall:
+	unlink $(USE_LIBDIR)/$(SHARED_LIB)
+	rm -f $(USE_LIBDIR)/$(SHARED_LIB).$(SO_VERSION)
+	rm -f $(USE_LIBDIR)/$(STATIC_LIB)
+	rm -f $(FULL_MANDIR)/$(MAN).gz
+	rm -f `find $(LOCDIR) -name $(LIB).mo`
+
+depend: makefile.depend
+
+debug:
+	echo "$(FULL_MANDIR)"
+
+$(STATIC_LIB): $(OBJS)
+	test -z "$(STATIC)" || \
+		$(AR) rcs $@ $(OBJS)
+	
+$(SHARED_LIB): $(OBJS)
+	test -z "$(SHARED)" || \
+		$(CC) -o $@ $(OBJS) $(LDFLAGS) -shared
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS) -fPIC
+
+$(MAN).gz: $(MAN)
+	test -z "$(MAN)" || gzip -k9f $(MAN)
+
+makefile.depend:
+	cc -M $(SRCS) $(CFLAGS) >$@
+
+
+.PHONY: build clean install uninstall depend debug
+
+# vim: noet
+# end of file
