@@ -64,7 +64,7 @@ $(PROG): $(OBJS)
 	$(CC) -c -o $@ $< $(COPTS) $(CFLAGS)
 
 $(MAN).gz: $(MAN)
-	-gzip -k9f $(MAN)
+	test -z "$(MAN)" || gzip -k9f $(MAN)
 
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
