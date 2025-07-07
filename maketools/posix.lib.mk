@@ -35,10 +35,10 @@ locale:
 
 install: build
 	install -d -D -m 0755 $(LIBDIR)
-	test -z "$(STATIC)" || install -m 0755 $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB)
-	test -z "$(SHARED)" || \
+	test -z "$(AS_STATIC)" || install -m 0755 $(STATIC_LIB) $(LIBDIR)/$(STATIC_LIB)
+	test -z "$(AS_SHARED)" || \
 		install -m 0755 $(SHARED_LIB) $(LIBDIR)/$(SHARED_LIB).$(SO_VERSION) && \
-		ln -f $(SHARED_LIB).$(SO_VERSION) $(LIBDIR)/$(SHARED_LIB)
+		ln -sf $(SHARED_LIB).$(SO_VERSION) $(LIBDIR)/$(SHARED_LIB)
 	test -z "$(MAN)" || install -d -D -m 0755 $(FULL_MANDIR)
 	test -z "$(MAN)" || install -m 0644 -t $(FULL_MANDIR) $(MAN).gz
 	for i in $(LOCALES); do \
@@ -58,14 +58,15 @@ uninstall:
 depend: makefile.depend
 
 debug:
-	echo "$(FULL_MANDIR)"
+	echo "$(AS_STATIC)"
+	echo "$(AS_SHARED)"
 
 $(STATIC_LIB): $(OBJS)
-	test -z "$(STATIC)" || \
+	test -z "$(AS_STATIC)" || \
 		$(AR) rcs $@ $(OBJS)
 	
 $(SHARED_LIB): $(OBJS)
-	test -z "$(SHARED)" || \
+	test -z "$(AS_SHARED)" || \
 		$(CC) -o $@ $(OBJS) $(LDFLAGS) -shared
 
 %.o: %.c
