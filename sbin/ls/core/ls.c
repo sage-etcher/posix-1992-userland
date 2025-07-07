@@ -54,11 +54,7 @@ enum {
 #   define DOMAIN_DIR  "/usr/local/share/locale"
 #endif
 
-#define cgettext(msg, category) dcgettext (DOMAIN_NAME, msg, category)
 #define _(msg)    gettext (msg)
-#define _t(msg)  cgettext (msg, LC_TIME)
-#define _c(msg)  cgettext (msg, LC_COLLATE)
-#define _ct(msg) cgettext (msg, LC_CTYPE)
 
 typedef struct {
     char *filename;
@@ -545,8 +541,8 @@ get_date (time_t file_time)
     /* {{{ */
     static char s_buf[100];
     const char *date_format = NULL;
-    const char *posix_new_fmt = _t("%b %e %H:%M");
-    const char *posix_old_fmt = _t("%b %e  %Y");
+    const char *posix_new_fmt = "%b %e %H:%M";
+    const char *posix_old_fmt = "%b %e  %Y";
     time_t now = time (NULL);
 
     if ((check_future (file_time, now) < 0) || 
@@ -1001,6 +997,14 @@ int
 main (int argc, char **argv)
 {
     /* {{{ */
+    setlocale (LC_ALL, "");
+    setlocale (LC_COLLATE, "");
+    setlocale (LC_TIME, "");
+    setlocale (LC_CTYPE, "");
+
+    bindtextdomain (DOMAIN_NAME, DOMAIN_DIR);
+    textdomain (DOMAIN_NAME);
+
     return ls_main (argc, argv);
     /* }}} */
 }

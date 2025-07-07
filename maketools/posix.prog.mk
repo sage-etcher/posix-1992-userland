@@ -15,7 +15,7 @@ CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 
 all: build
 
-build: $(PROG) $(MAN).gz
+build: locale $(PROG) $(MAN).gz
 
 clean:
 	rm -f $(OBJS)
@@ -23,8 +23,12 @@ clean:
 	rm -f $(MAN).gz
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
+	rm -f .locale_done
 
-locale:
+locale: .locale_done
+
+.locale_done: $(SRCS)
+	touch .locale_done
 	$(PROJECT_ROOT)/buildtools/generate_locales.py \
 		--domainname $(PROG) \
 		--inputfiles `echo "$(SRCS)" |sed 's/ \+/,/g'` \
@@ -63,7 +67,7 @@ makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
 
 
-.PHONY: build clean install uninstall depend debug
+.PHONY: build clean locale install uninstall depend debug
 
 # vim: noet
 # end of file
