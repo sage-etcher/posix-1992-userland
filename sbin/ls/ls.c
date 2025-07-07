@@ -996,6 +996,7 @@ ls_main (int argc, char **argv)
     /* }}} */
 }
 
+#if 0
 int
 main (int argc, char **argv)
 {
@@ -1003,6 +1004,7 @@ main (int argc, char **argv)
     return ls_main (argc, argv);
     /* }}} */
 }
+#endif
 
 /* vim: fdm=marker
  * end of file */
