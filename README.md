@@ -9,7 +9,18 @@ Compile-time dependencies:
 - posix `make` (`gnumake`, `bsdmake`, `make`)
 - gettext
 
+## Install 
+
 ```
 $ make
 # make install
+```
+
+## Devel
+
+```
+$ create-hook-symlinks
+$ make depend
+$ make
+$ make install
 ```
