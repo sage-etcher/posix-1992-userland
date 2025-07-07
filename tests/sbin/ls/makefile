@@ -1,5 +1,6 @@
 
-SUBDIRS=	function
+SUBDIRS=	add_child dir_content filter get_group_name get_user_name lu_len \
+			map snprintlu snprintlu_dup strdup
 
 LSPATH		:=	$(PROJECT_ROOT)/sbin/ls/core
 _LDFLAGS 	:= 	$(LDFLAGS) -L$(LSPATH) -lls -lm

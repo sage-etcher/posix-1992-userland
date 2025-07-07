@@ -1,5 +1,5 @@
 
-PROG=	tests-ls-function
+PROG=	tests-ls-add_child
 SRCS=	main.c
 OBJS=	main.o
 MAN=	

@@ -1,5 +1,5 @@
 
-PROG=	tests-ls-function
+PROG=	tests-ls-map
 SRCS=	main.c
 OBJS=	main.o
 MAN=	

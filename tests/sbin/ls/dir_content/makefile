@@ -1,5 +1,5 @@
 
-PROG=	tests-ls-function
+PROG=	tests-ls-dir_content
 SRCS=	main.c
 OBJS=	main.o
 MAN=	

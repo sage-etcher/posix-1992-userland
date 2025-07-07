@@ -1,5 +1,5 @@
 
-PROG=	tests-ls-function
+PROG=	tests-ls-get_group_name
 SRCS=	main.c
 OBJS=	main.o
 MAN=	

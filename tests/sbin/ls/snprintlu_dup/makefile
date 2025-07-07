@@ -1,5 +1,5 @@
 
-PROG=	tests-ls-function
+PROG=	tests-ls-snprintlu_dup
 SRCS=	main.c
 OBJS=	main.o
 MAN=	
