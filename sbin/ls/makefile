@@ -1,18 +1,12 @@
 
-CATEGORIES=	LC_MESSAGES
-LOCALES=	de en es fr it
+EXTERN	+=	"PROJECT_ROOT=$(PROJECT_ROOT)"
+EXTERN	+=	"USE_SBIN=$(USE_SBIN)"
 
-STATIC=		true
-SHARED=		true
-SO_VERSION=	0.1.0
+build clean install uninstall depend debug:
+	$(MAKE) -C core $@ -- $(EXTERN)
+	$(MAKE) -C main $@ -- $(EXTERN)
 
-LIB=	ls
-SRCS=	ls.c
-OBJS=	ls.o
-MAN=	ls.1
 
-LDFLAGS=	-lm
-
-include $(PROJECT_ROOT)/maketools/posix.lib.mk
+.PHONY: build clean install uninstall depend debug
 # vim: noet
 # end of file 
