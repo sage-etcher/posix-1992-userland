@@ -53,8 +53,8 @@ depend: makefile.depend
 $(PROG): $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS)
 
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+.c.o:
+	$(CC) -c $< $(CFLAGS)
 
 $(MAN).gz: $(MAN)
 	test -z "$(MAN)" || gzip -k9f $(MAN)

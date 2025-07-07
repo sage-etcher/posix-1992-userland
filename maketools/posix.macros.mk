@@ -12,4 +12,6 @@ SHAREDIR ?= $(DESTDIR)/$(PREFIX)/share
 MANDIR   ?= $(DESTDIR)/$(PREFIX)/share/man
 LOCDIR   ?= $(DESTDIR)/$(PREFIX)/share/locale
 
+.SUFFIXES: .c .o
+
 # vim: noet

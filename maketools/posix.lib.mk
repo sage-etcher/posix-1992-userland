@@ -69,8 +69,8 @@ $(SHARED_LIB): $(OBJS)
 	test -z "$(AS_SHARED)" || \
 		$(CC) -o $@ $(OBJS) $(LDFLAGS) -shared
 
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS) -fPIC
+.c.o:
+	$(CC) -c $< $(CFLAGS) -fPIC
 
 $(MAN).gz: $(MAN)
 	test -z "$(MAN)" || gzip -k9f $(MAN)
