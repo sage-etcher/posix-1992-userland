@@ -50,9 +50,6 @@ uninstall:
 
 depend: makefile.depend
 
-debug:
-	echo "$(FULL_MANDIR)"
-
 $(PROG): $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS)
 
