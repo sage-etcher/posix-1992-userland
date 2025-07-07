@@ -18,4 +18,3 @@ build clean run depend debug:
 locale install uninstall:
 
 .PHONY: build clean locale install uninstall depend debug
-# end of file
