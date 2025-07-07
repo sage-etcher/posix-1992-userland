@@ -1,8 +1,8 @@
 
 SUBDIRS=	function
 
-LSPATH		:=	$(PROJECT_ROOT)/sbin/ls
-_LDFLAGS 	:= 	$(LDFLAGS) -L$(LSPATH) -lls
+LSPATH		:=	$(PROJECT_ROOT)/sbin/ls/core
+_LDFLAGS 	:= 	$(LDFLAGS) -L$(LSPATH) -lls -lm
 _CFLAGS		:= 	$(CFLAGS)  -I$(LSPATH)
 
 EXTERN	:=	"PROJECT_ROOT=$(PROJECT_ROOT)"
@@ -16,9 +16,6 @@ build clean run depend debug:
 	@for d in $(SUBDIRS); do \
 	    $(MAKE) -C $$d $@ -- $(EXTERN) || exit; \
 	done;
-
-debug:
-	echo 'test-ls-function: $(EXTERN)'
 
 .PHONY: build clean run
 # end of file
