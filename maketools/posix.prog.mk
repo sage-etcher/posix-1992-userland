@@ -45,8 +45,9 @@ locale: .locale_done
 install: build
 	install -d -D -m 0755 $(USE_BINDIR)
 	install -m 0755 -t $(USE_BINDIR) $(PROG)
-	test -z "$(MAN)" || install -d -D -m 0755 $(FULL_MANDIR)
-	test -z "$(MAN)" || install -m 0644 -t $(FULL_MANDIR) $(MAN).gz
+	test -z "$(MAN)" || \
+		(install -d -D -m 0755 $(FULL_MANDIR) && \
+		install -m 0644 -t $(FULL_MANDIR) $(MAN).gz); \
 	test -z "$(USE_LOCALES)" || for i in $(LOCALES); do \
 		for j in $(CATEGORIES); do \
 			install -d -D -m 0755 $(LOCDIR)/$$i/$$j; \
