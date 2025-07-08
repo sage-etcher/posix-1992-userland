@@ -107,6 +107,11 @@ filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *cb_data,
     unsigned char *dst = arr;
     size_t count = 0;
 
+    if ((arr == NULL) || (!elem_count) || (!elem_size) || (cb == NULL))
+    {
+        return 0;
+    }
+
     for (; elem_count > 0; elem_count--)
     {
         if (cb (cb_data, src))
@@ -202,16 +207,22 @@ add_child (const char *dir, const char *child)
     char *iter = s_result;
     size_t len = 0;
     
-    len = strlen (dir);
-    memcpy (iter, dir, len);
-    iter += len;
+    if (dir != NULL)
+    {
+        len = strlen (dir);
+        memcpy (iter, dir, len);
+        iter += len;
+    }
 
     *iter = '/';
     iter++;
 
-    len = strlen (child);
-    memcpy (iter, child, len);
-    iter += len;
+    if (child != NULL)
+    {
+        len = strlen (child);
+        memcpy (iter, child, len);
+        iter += len;
+    }
 
     *iter = '\0';
 
