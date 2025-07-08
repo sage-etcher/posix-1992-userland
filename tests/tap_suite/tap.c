@@ -9,6 +9,7 @@
 static int s_test_total   = 0;
 static int s_test_count   = 0;
 static int s_failed_count = 0;
+static int s_skip_count   = 0;
 
 static const char *s_last_test_name = NULL;
 static int s_last_test_status = 0;
@@ -25,13 +26,24 @@ plan (int number_of_tests)
     s_test_total = number_of_tests;
 }
 
+void
+done_testing (void)
+{
+    plan (s_test_count);
+}
+
 int
 ok (int condition, const char *test_name)
 {
     s_test_count++;
+    if (s_skip_count != 0)
+    {
+        s_skip_count--;
+        return 1;
+    }
     s_last_test_status = condition;
     s_last_test_name   = test_name;
-    if (condition)
+    if (!condition)
     {
         s_failed_count++;
         printf("not ");
@@ -60,10 +72,8 @@ fail (const char *test_name)
 void
 skip (int number, const char *reason)
 {
-    int new_count = s_test_count += number;
-    s_test_count++;
-    printf("skip %d..%d\n", s_test_count, new_count);
-    s_test_count = new_count;
+    s_skip_count = number;
+    printf("skip %d..%d\n", s_test_count+1, s_test_count+number);
 }
 
 static void
@@ -71,6 +81,7 @@ vnote (const char *fmt, va_list args)
 {
     printf ("# ");
     vprintf (fmt, args);
+    printf ("\n");
 }
 
 int
@@ -79,7 +90,7 @@ diag (const char *diagnostic_message, ...)
     va_list args;
     va_start (args, diagnostic_message);
 
-    note ("\tFailed test '%s'\n", s_last_test_name);
+    note ("\tFailed test '%s'", s_last_test_name);
     vnote (diagnostic_message, args);
 
     va_end (args);
@@ -111,6 +122,22 @@ bail_out (const char *reason)
 {
     fail (reason);
     exit (255);
+}
+
+int
+strcmp_null_safe (const char *a, const char *b)
+{
+    if (a == NULL) return 1;
+    if (b == NULL) return -1;
+    return strcmp (a, b);
+}
+
+int
+memcmp_null_safe (const void *a, const void *b, size_t n)
+{
+    if (a == NULL) return 1;
+    if (b == NULL) return -1;
+    return memcmp (a, b, n);
 }
 
 

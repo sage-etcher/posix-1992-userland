@@ -1,12 +1,13 @@
+SUBDIRS=    tap_suite sbin
 
-SUBDIRS=	sbin
+TAPPATH     :=  $(PROJECT_ROOT)/tests/tap_suite
+_CFLAGS     :=  $(CFLAGS) -O0 -ggdb -I$(TAPPATH)
+_LDFLAGS    :=  $(LDFLAGS) -L$(TAPPATH) -ltap
 
-CFLAGS	:=	$(CFLAGS) -O0 -ggdb
-LDFLAGS :=	$(LDFLAGS)
-
-EXTERN	:=	"PROJECT_ROOT=$(PROJECT_ROOT)"
-EXTERN  +=  "CFLAGS=$(CFLAGS)"
-EXTERN  +=  "LDFLAGS=$(LDFLAGS)"
+EXTERN  :=  "PROJECT_ROOT=$(PROJECT_ROOT)"
+EXTERN  +=  "CFLAGS=$(CFLAGS) $(_CFLAGS)"
+EXTERN  +=  "LDFLAGS=$(LDFLAGS) $(_LDFLAGS)"
+EXTERN  +=  "TAPPATH=$(TAPPATH)"
 
 all: build
 
