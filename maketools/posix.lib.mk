@@ -53,9 +53,9 @@ install: build
 	done
 
 uninstall:
-	-unlink $(USE_LIBDIR)/$(SHARED_LIB)
-	rm -f $(USE_LIBDIR)/$(SHARED_LIB).$(SO_VERSION)
-	rm -f $(USE_LIBDIR)/$(STATIC_LIB)
+	-unlink $(LIBDIR)/$(SHARED_LIB)
+	rm -f $(LIBDIR)/$(SHARED_LIB).$(SO_VERSION)
+	rm -f $(LIBDIR)/$(STATIC_LIB)
 	rm -f $(FULL_MANDIR)/$(MAN).gz
 	rm -f `find $(LOCDIR) -name $(LIB).mo`
 
