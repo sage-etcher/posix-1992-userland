@@ -20,6 +20,7 @@ $ make
 
 ```
 $ create-hook-symlinks
+$ echo "ENABLE_TESTS=true" >>config.mk
 $ make depend
 $ make
 $ make install
