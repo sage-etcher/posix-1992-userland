@@ -16,7 +16,7 @@ SHARED_LIB	?=	lib$(LIB).so
 
 all: build
 
-build: locale $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
+build: .gitignore locale $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
 
 clean:
 	rm -f $(OBJS)
@@ -25,6 +25,14 @@ clean:
 	rm -f $(MAN).gz
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
+
+.gitignore: makefile
+	rm -f $@.tmp
+	-cat $@ >$@.tmp
+	echo "$@.tmp" >>$@.tmp
+	echo "$(SHARED_LIB)" >>$@.tmp
+	echo "$(STATIC_LIB)" >>$@.tmp
+	cat $@.tmp |sort |uniq >$@
 
 locale: .locale_done
 

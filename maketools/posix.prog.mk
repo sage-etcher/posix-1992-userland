@@ -15,7 +15,7 @@ CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 
 all: build
 
-build: locale $(PROG) $(MAN).gz
+build: .gitignore locale $(PROG) $(MAN).gz
 
 clean:
 	rm -f $(OBJS)
@@ -23,6 +23,13 @@ clean:
 	rm -f $(MAN).gz
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
+
+.gitignore: makefile
+	rm -f $@.tmp
+	cp $@ $@.tmp
+	echo "$@.tmp" >>$@.tmp
+	echo "$(PROG)" >>$@.tmp
+	cat $@.tmp |sort |uniq >$@
 
 locale: .locale_done
 
