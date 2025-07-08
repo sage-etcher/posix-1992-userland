@@ -133,6 +133,11 @@ map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *cb_data, v
     /* {{{ */
     unsigned char *iter = arr;
 
+    if ((arr == NULL) || (!elem_count) || (!elem_size) || (cb == NULL))
+    {
+        return;
+    }
+
     for (; elem_count > 0; elem_count--)
     {
         cb (cb_data, iter);
@@ -145,8 +150,16 @@ char *
 strdup (const char *src)
 {
     /* {{{ */
-    size_t n = strlen (src);
-    char *dst = malloc (n + 1);
+    size_t n = 0;
+    char *dst = NULL;
+
+    if (src == NULL)
+    {
+        return NULL;
+    }
+
+    n = strlen (src);
+    dst = malloc (n + 1);
     return memcpy (dst, src, n+1);
     /* }}} */
 }
@@ -171,7 +184,14 @@ snprintlu (char *buf, size_t n, long unsigned lu)
     /* {{{ */
     size_t i = 0;
     size_t size = lu_len (lu);
-    char *iter = &buf[n-1];
+    char *iter = NULL;
+    
+    if (buf == NULL) 
+    { 
+        return size; 
+    }
+
+    iter = &buf[n-1];
 
     for (i = 0; i < n; i++)
     {
