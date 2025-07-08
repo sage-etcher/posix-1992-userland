@@ -28,8 +28,8 @@ clean:
 locale: .locale_done
 
 .locale_done: $(SRCS)
-	touch .locale_done
-	$(PROJECT_ROOT)/buildtools/generate_locales.py \
+	cat /dev/null >$@
+	test -z "$(USE_LOCALES)" || $(PROJECT_ROOT)/buildtools/generate_locales.py \
 		--domainname $(PROG) \
 		--inputfiles `echo "$(SRCS)" |sed 's/ \+/,/g'` \
 		--locales    `echo "$(LOCALES)" |sed 's/ \+/,/g'` \
@@ -40,7 +40,7 @@ install: build
 	install -m 0755 -t $(USE_BINDIR) $(PROG)
 	test -z "$(MAN)" || install -d -D -m 0755 $(FULL_MANDIR)
 	test -z "$(MAN)" || install -m 0644 -t $(FULL_MANDIR) $(MAN).gz
-	for i in $(LOCALES); do \
+	test -z "$(USE_LOCALES)" || for i in $(LOCALES); do \
 		for j in $(CATEGORIES); do \
 			install -d -D -m 0755 $(LOCDIR)/$$i/$$j; \
 			install -m 0644 ./locale/$$i/$$j/$(PROG).mo $(LOCDIR)/$$i/$$j/; \

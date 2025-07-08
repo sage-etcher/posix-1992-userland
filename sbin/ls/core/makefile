@@ -1,4 +1,5 @@
 
+USE_LOCALES=true
 CATEGORIES=	LC_MESSAGES
 LOCALES=	de en es fr it
 
