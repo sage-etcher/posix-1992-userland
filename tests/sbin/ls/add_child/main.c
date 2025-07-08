@@ -1,67 +1,29 @@
 
-#include <stdio.h>
-#include <string.h>
-
 #include "ls.h"
-
-int g_test_count = 0;
-int g_exit_status = 0;
-
-#define log(prefix,msg) \
-    do { \
-        printf("%s %d ", prefix, g_test_count); \
-        if ((msg) != NULL) { \
-            printf("- %s", msg); \
-        } \
-        printf("\n"); \
-    }
-#define pass(msg) log("ok", msg)
-
-#define fail(msg) \
-    do { \
-        log("not ok", msg); \
-        g_exit_status = 1; \
-    } while (0)
-
-#define skip(n,msg) \
-    do { \
-        log("skip %d..%d", msg, g_test_count+1, g_test_count+(n)); \
-        g_test_count+=(n); \
-    } while (0)
-
-#define diag(msg, ...) vprintf ("# "msg, __VA_ARGS)
-
-#define ok(cond,msg)  \
-    do { \
-        g_test_count++; \
-        if (cond) { pass(msg) } \
-        else { fail(msg) } \
-    } while (0)
-
-#define plan(n) printf ("%d..%d\n", g_test_count+1, g_test_count+(n))
-
-#define is_eq(x,y,msg) ok(((x) == (y)), msg)
-#define is_neq(x,y,msg) ok(((x) != (y)), msg)
-
-#define is_streq(x,y,msg) ok(strcmp(x, y), msg)
-#define is_strneq(x,y,msg) ok(!strcmp(x, y), msg)
-
-#define exit_status() g_exit_status
-
+#include "tap.h"
 
 int
 main (int argc, char **argv)
 {
-    plan(5);
+    const char *path = NULL;
 
-    ok(1, "always true");
+    path = add_child (NULL, NULL);
+    is_str(path, "/", "NULL parent and child") or
+    diag("result path: %s", path);
 
-    is_streq("/etc", "/etc", "identical constant strings");
-    is_streq("/tmp", "/etc", "different constant strings");
-    is_streq(NULL, NULL, "both null");
-    is_streq("/etc", NULL, "2nd param null");
-    is_streq(NULL, "/etc", "1st param null");
+    path = add_child ("/etc", NULL);
+    is_str(path, "/etc/", "NULL child, valid parent") or
+    diag("result path: %s", path);
 
+    path = add_child (NULL, "etc");
+    is_str(path, "/etc", "NULL parent, valid child") or
+    diag("result path: %s", path);
+
+    path = add_child ("/etc", "test");
+    is_str(path, "/etc/test", "valid parent and child") or
+    diag("result path: %s", path);
+
+    done_testing();
     return exit_status();
 }
 

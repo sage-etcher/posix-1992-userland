@@ -1,6 +1,7 @@
 
-SUBDIRS=	add_child dir_content filter get_group_name get_user_name lu_len \
-			map snprintlu snprintlu_dup strdup
+SUBDIRS=	add_child filter
+#SUBDIRS=	add_child dir_content filter get_group_name get_user_name lu_len \
+#			map snprintlu snprintlu_dup strdup
 
 LSPATH		:=	$(PROJECT_ROOT)/sbin/ls/core
 _LDFLAGS 	:= 	$(LDFLAGS) -L$(LSPATH) -lls -lm
@@ -10,6 +11,7 @@ EXTERN	:=	"PROJECT_ROOT=$(PROJECT_ROOT)"
 EXTERN	+=	"CFLAGS=$(CFLAGS) $(_CFLAGS)"
 EXTERN	+=	"LDFLAGS=$(LDFLAGS) $(_LDFLAGS)"
 EXTERN  +=  "LSPATH=$(LSPATH)"
+EXTERN  +=  "TAPPATH=$(TAPPATH)"
 
 all: build
 
