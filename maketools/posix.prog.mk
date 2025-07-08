@@ -23,6 +23,7 @@ clean:
 	rm -f $(MAN).gz
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
+	rm -f .locale_done
 
 .gitignore: makefile
 	rm -f $@.tmp
