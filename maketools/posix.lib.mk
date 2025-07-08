@@ -25,7 +25,7 @@ clean:
 	rm -f $(MAN).gz
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
-	rm .locale_done
+	rm -f .locale_done
 
 locale: .locale_done
 
