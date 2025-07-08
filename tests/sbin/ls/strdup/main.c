@@ -10,7 +10,7 @@ main (int argc, char **argv)
     char *res = NULL;
 
     res = strdup (NULL);
-    is_str(res, NULL, "handles NULL input") or diag("got \"%s\"", res);
+    is(res, NULL, "handles NULL input") or diag("got \"%s\"", res);
     free (res);
 
     res = strdup ("hello world");

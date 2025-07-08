@@ -184,34 +184,35 @@ snprintlu (char *buf, size_t n, long unsigned lu)
     /* {{{ */
     size_t i = 0;
     size_t size = lu_len (lu);
-    char *iter = NULL;
     
-    if (buf == NULL) 
-    { 
-        return size; 
-    }
+    /* if buf is null, return reqruied */
+    if (buf == NULL) return size+1;
 
-    iter = &buf[n-1];
+    /* otherwise reture # of bytes written (i) */
+    if (n == 0) return i;
 
-    for (i = 0; i < n; i++)
-    {
-        *iter = '0' + (lu % 10);
-        iter--;
-        lu /= 10;
-    }
-
+    n--;
     buf[n] = '\0';
+    i++;
 
-    return size;
+    while (i <= n)
+    {
+        buf[n-i] = '0' + (lu % 10);
+        lu /= 10;
+        i++;
+    }
+
+    return i;
     /* }}} */
 }
+
 
 char *
 snprintlu_dup (long unsigned lu)
 {
     /* {{{ */
-    size_t size = lu_len (lu);
-    char *buf = malloc (size + 1);
+    size_t size = snprintlu (NULL, 0, lu);
+    char *buf = malloc (size);
     (void)snprintlu (buf, size, lu);
     return buf;
     /* }}} */
