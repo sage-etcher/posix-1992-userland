@@ -849,7 +849,11 @@ get_config (int argc, char **argv, int *p_conf)
             ENABLE_BFLAG (config, SORT_TIME);
             break;
 
-        case 'u': ENABLE_BFLAG (config, FILE_ACCESS); break;
+        case 'u': 
+            DISABLE_BFLAG (config, TIME_MODES);
+            ENABLE_BFLAG (config, FILE_ACCESS); 
+            break;
+
         case '1':
             DISABLE_BFLAG (config, PRINT_MODES);
             ENABLE_BFLAG (config, SINGLE_MODE);
