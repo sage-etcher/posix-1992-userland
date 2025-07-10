@@ -27,7 +27,7 @@ clean:
 
 .gitignore: makefile
 	rm -f $@.tmp
-	cp $@ $@.tmp
+	-cat $@ >$@.tmp
 	echo "$@.tmp" >>$@.tmp
 	echo "$(PROG)" >>$@.tmp
 	cat $@.tmp |sort |uniq >$@
