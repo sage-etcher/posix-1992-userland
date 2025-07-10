@@ -255,10 +255,13 @@ int
 dir_content (char **buf, size_t n, const char dirname[])
 {
     /* {{{ */
-    DIR *dir = opendir (dirname);
+    DIR *dir = NULL; 
     struct dirent *dirent = NULL;
     size_t count = 0;
 
+    if (dirname == NULL) { return -1; }
+
+    dir = opendir (dirname);
     if (dir == NULL)
     {
         perror (_("cannot read directory"));
@@ -266,15 +269,10 @@ dir_content (char **buf, size_t n, const char dirname[])
     }
 
     /* iterate over the directory contents */
-    while ((dirent = readdir (dir)) != NULL)
+    for (; (dirent = readdir (dir)) != NULL; count++)
     {
-        count++;
         if (buf == NULL) continue;
-        if (count > n) 
-        { 
-            closedir (dir);
-            return count; 
-        }
+        if (count + 1 > n) break;
         
         *buf++ = strdup (dirent->d_name);
     }
