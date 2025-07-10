@@ -1,5 +1,5 @@
 
-SUBDIRS=	ls
+SUBDIRS=	basename ls
 
 USE_SBIN=	true
 EXTERN :=	"PROJECT_ROOT=$(PROJECT_ROOT)" \
