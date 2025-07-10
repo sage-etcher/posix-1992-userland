@@ -35,9 +35,12 @@ enum {
     SORT_TIME   = 1 << 11,
     FILE_ACCESS = 1 << 12,
     SINGLE_MODE = 1 << 13,
+    FILE_MOD    = 1 << 14,
+    SORT_COLLATE= 1 << 15,
 
     PRINT_MODES = COLUMN_MODE | LONG_MODE | SINGLE_MODE,
-    TIME_MODES  = FILE_STATUS | FILE_ACCESS
+    TIME_MODES  = FILE_STATUS | FILE_ACCESS | FILE_MOD,
+    SORT_MODES  = SORT_COLLATE | SORT_TIME
     /* }}} */
 }; 
 
@@ -781,7 +784,7 @@ static int
 get_config (int argc, char **argv, int *p_conf)
 { 
     /* {{{ */
-    int config = SINGLE_MODE | FILE_STATUS;
+    int config = SINGLE_MODE | FILE_MOD | SORT_COLLATE;
     int c = 0;
 
     /* default settings for terminal device */
@@ -842,6 +845,7 @@ get_config (int argc, char **argv, int *p_conf)
             break;
 
         case 't':
+            DISABLE_BFLAG (config, SORT_MODES);
             ENABLE_BFLAG (config, SORT_TIME);
             break;
 
