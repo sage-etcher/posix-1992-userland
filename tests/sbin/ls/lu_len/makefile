@@ -1,7 +1,7 @@
 
 PROG=	tests-ls-lu_len
 SRCS=	main.c
-OBJS=	main.o $(LSLIB)
+OBJS=	main.o
 MAN=	
 
 run:
