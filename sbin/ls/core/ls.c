@@ -947,9 +947,17 @@ static int
 list_directory (char *dir)
 {
     /* {{{ */
-    size_t n_entries = dir_content (NULL, 0, dir);
-    char **entries = malloc (n_entries * sizeof (char *));
-    dir_content (entries, n_entries, dir);
+    int n_entries = 0;
+    char **entries = NULL;
+
+    n_entries = dir_content (NULL, 0, dir);
+    if (n_entries <= 0)
+    {
+        return -1;
+    }
+
+    entries = malloc (n_entries * sizeof (char *));
+    (void)dir_content (entries, n_entries, dir);
 
     /* remove hidden files */
     if (!(s_conf & HIDDEN))
@@ -971,6 +979,7 @@ static int
 list_directories (char **dirs, size_t n, int first)
 {
     /* {{{ */
+    int rc = 0;
     size_t i = 0;
 
     for (i = 0; i < n; i++, dirs++)
@@ -981,7 +990,11 @@ list_directories (char **dirs, size_t n, int first)
             printf ("%s:\n", *dirs);
         }
 
-        (void)list_directory (*dirs);
+        rc = list_directory (*dirs);
+        if (rc != 0)
+        {
+            return rc;
+        }
 
         first = 0;
     }
@@ -994,6 +1007,7 @@ int
 ls_main (int argc, char **argv)
 {
     /* {{{ */
+    int rc = 0;
     char *default_dir = ".";
     int n = get_config (argc, argv, &s_conf);
 
@@ -1011,14 +1025,14 @@ ls_main (int argc, char **argv)
     /* list */
     if (s_conf & NO_DIRECTORY)
     {
-        list_files (argv, argc, "");
+        rc = list_files (argv, argc, "");
     }
     else
     {
-        list_directories (argv, argc, 1);
+        rc = list_directories (argv, argc, 1);
     }
 
-    return 0;
+    return rc;
     /* }}} */
 }
 
