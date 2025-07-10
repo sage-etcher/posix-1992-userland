@@ -5,7 +5,7 @@ FULL_MANDIR := $(MANDIR)/man$(MANNUM)
 $(MAN).gz: $(MAN)
 	test -z "$(MAN)" || gzip -k9f $(MAN)
 
-build_man: $(MAN).gz
+build_manpage: $(MAN).gz
 
 .PHONY: build_manpage
 
