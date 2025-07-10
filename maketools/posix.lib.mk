@@ -2,23 +2,16 @@
 include $(PROJECT_ROOT)/maketools/posix.macros.mk
 include makefile.depend
 
-MANNUM = `echo "$(MAN)" |rev |cut -c 1`
-FULL_MANDIR := $(MANDIR)/man$(MANNUM)
-
-CATEGORIES 	?= none
-LOCALES 	?= en
-
 CFLAGS	+= '-DDOMAIN_NAME="$(LIB)"'
 CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 
 STATIC_LIB	?=	lib$(LIB).a
 SHARED_LIB	?=	lib$(LIB).so
 
-DOMAIN_NAME	?=	$(LIB)
 
 all: build
 
-build: .gitignore build_mo $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
+build: build_mo $(STATIC_LIB) $(SHARED_LIB) build_manpage build_gitignore 
 
 clean:
 	rm -f $(OBJS)
@@ -28,15 +21,6 @@ clean:
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
 	rm -f .locale_done
-
-.gitignore: makefile
-	rm -f $@.tmp
-	-cat $@ >$@.tmp
-	echo "$@.tmp" >>$@.tmp
-	echo "$(SHARED_LIB)" >>$@.tmp
-	echo "$(STATIC_LIB)" >>$@.tmp
-	cat $@.tmp |sort |uniq >$@
-
 
 install: build
 	install -d -D -m 0755 $(LIBDIR)
@@ -74,15 +58,20 @@ $(SHARED_LIB): $(OBJS)
 .c.o:
 	$(CC) -c $< $(CFLAGS) -fPIC
 
-$(MAN).gz: $(MAN)
-	test -z "$(MAN)" || gzip -k9f $(MAN)
-
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
 
+
+include $(PROJECT_ROOT)/maketools/posix.manpage.mk
+
+GITIGNORE_LINES	:=	$(SHARED_LIB) $(STATIC_LIB)
+include $(PROJECT_ROOT)/maketools/posix.gitignore.mk
+
+LOCALES 	?= en
+DOMAIN_NAME	?=	$(LIB)
 include $(PROJECT_ROOT)/maketools/posix.locale.mk
 
-.PHONY: build clean install uninstall depend debug
+.PHONY: build clean install uninstall depend
 
 # vim: noet
 # end of file

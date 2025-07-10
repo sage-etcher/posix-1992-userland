@@ -4,20 +4,14 @@ include makefile.depend
 
 USE_SBIN ?= false
 USE_BINDIR = `$(USE_SBIN) && echo "$(SBINDIR)" || echo "$(BINDIR)"`
-MANNUM = `echo "$(MAN)" |rev |cut -c 1`
-FULL_MANDIR := $(MANDIR)/man$(MANNUM)
-
-CATEGORIES 	?= none
-LOCALES 	?= en
 
 CFLAGS	+= '-DDOMAIN_NAME="$(PROG)"'
 CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 
-DOMAIN_NAME	?=	$(PROG)
 
 all: build
 
-build: .gitignore build_mo $(PROG) $(MAN).gz
+build: build_mo $(PROG) build_manpage build_gitignore 
 
 clean:
 	rm -f $(OBJS)
@@ -26,13 +20,6 @@ clean:
 	rm -f `find locale -name '*.mo'`
 	rm -f `find locale -name '*.pot'`
 	rm -f .locale_done
-
-.gitignore: makefile
-	rm -f $@.tmp
-	-cat $@ >$@.tmp
-	echo "$@.tmp" >>$@.tmp
-	echo "$(PROG)" >>$@.tmp
-	cat $@.tmp |sort |uniq >$@
 
 install: build
 	install -d -D -m 0755 $(USE_BINDIR)
@@ -60,13 +47,18 @@ $(PROG): $(OBJS)
 .c.o:
 	$(CC) -c $< $(CFLAGS)
 
-$(MAN).gz: $(MAN)
-	test -z "$(MAN)" || gzip -k9f $(MAN)
-
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
 
+include $(PROJECT_ROOT)/maketools/posix.manpage.mk
+
+GITIGNORE_LINES	:=	$(PROG)
+include $(PROJECT_ROOT)/maketools/posix.gitignore.mk
+
+LOCALES 	?= en
+DOMAIN_NAME	?=	$(PROG)
 include $(PROJECT_ROOT)/maketools/posix.locale.mk
+
 
 .PHONY: build clean install uninstall depend debug
 
