@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+char *basename (char *string, char *suffix);
 int basename_main (int argc, char **argv);
 
 
