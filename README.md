@@ -16,6 +16,12 @@ $ make
 # make install
 ```
 
+or 
+
+```
+$ make install -- PREFIX="/usr" DESTDIR="$(pwd)/installdir"
+```
+
 ## Devel
 
 ```
