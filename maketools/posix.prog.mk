@@ -13,9 +13,11 @@ LOCALES 	?= en
 CFLAGS	+= '-DDOMAIN_NAME="$(PROG)"'
 CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 
+DOMAIN_NAME	?=	$(PROG)
+
 all: build
 
-build: .gitignore locale $(PROG) $(MAN).gz
+build: .gitignore build_mo $(PROG) $(MAN).gz
 
 clean:
 	rm -f $(OBJS)
@@ -31,16 +33,6 @@ clean:
 	echo "$@.tmp" >>$@.tmp
 	echo "$(PROG)" >>$@.tmp
 	cat $@.tmp |sort |uniq >$@
-
-locale: .locale_done
-
-.locale_done: $(SRCS)
-	cat /dev/null >$@
-	test -z "$(USE_LOCALES)" || $(PROJECT_ROOT)/buildtools/generate_locales.py \
-		--domainname $(PROG) \
-		--inputfiles `echo "$(SRCS)" |sed 's/ \+/,/g'` \
-		--locales    `echo "$(LOCALES)" |sed 's/ \+/,/g'` \
-		--categories `echo "$(CATEGORIES)" |sed 's/ \+/,/g'`
 
 install: build
 	install -d -D -m 0755 $(USE_BINDIR)
@@ -74,8 +66,9 @@ $(MAN).gz: $(MAN)
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
 
+include $(PROJECT_ROOT)/maketools/posix.locale.mk
 
-.PHONY: build clean locale install uninstall depend debug
+.PHONY: build clean install uninstall depend debug
 
 # vim: noet
 # end of file

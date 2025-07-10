@@ -14,9 +14,11 @@ CFLAGS	+= '-DDOMAIN_DIR="$(LOCDIR)"'
 STATIC_LIB	?=	lib$(LIB).a
 SHARED_LIB	?=	lib$(LIB).so
 
+DOMAIN_NAME	?=	$(LIB)
+
 all: build
 
-build: .gitignore locale $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
+build: .gitignore build_mo $(STATIC_LIB) $(SHARED_LIB) $(MAN).gz
 
 clean:
 	rm -f $(OBJS)
@@ -35,15 +37,6 @@ clean:
 	echo "$(STATIC_LIB)" >>$@.tmp
 	cat $@.tmp |sort |uniq >$@
 
-locale: .locale_done
-
-.locale_done: $(SRCS)
-	cat /dev/null >$@
-	test -z "$(USE_LOCALES)" || $(PROJECT_ROOT)/buildtools/generate_locales.py \
-		--domainname $(LIB) \
-		--inputfiles `echo "$(SRCS)" |sed 's/ \+/,/g'` \
-		--locales    `echo "$(LOCALES)" |sed 's/ \+/,/g'` \
-		--categories `echo "$(CATEGORIES)" |sed 's/ \+/,/g'`
 
 install: build
 	install -d -D -m 0755 $(LIBDIR)
@@ -70,10 +63,6 @@ uninstall:
 
 depend: makefile.depend
 
-debug:
-	echo "$(AS_STATIC)"
-	echo "$(AS_SHARED)"
-
 $(STATIC_LIB): $(OBJS)
 	test -z "$(AS_STATIC)" || \
 		$(AR) rcs $@ $(OBJS)
@@ -91,8 +80,9 @@ $(MAN).gz: $(MAN)
 makefile.depend:
 	cc -M $(SRCS) $(CFLAGS) >$@
 
+include $(PROJECT_ROOT)/maketools/posix.locale.mk
 
-.PHONY: build clean locale install uninstall depend debug
+.PHONY: build clean install uninstall depend debug
 
 # vim: noet
 # end of file
