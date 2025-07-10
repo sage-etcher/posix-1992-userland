@@ -1,7 +1,7 @@
 
 PROG=	tests-ls-strdup
 SRCS=	main.c
-OBJS=	main.o
+OBJS=	main.o $(LSLIB)
 MAN=	
 
 run:
