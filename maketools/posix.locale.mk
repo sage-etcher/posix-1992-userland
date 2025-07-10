@@ -13,13 +13,13 @@ build_po: $(POT)
 				msginit $(PO) -i $(POT) -l $$loc --no-translator; \
 	done
 
-build_mo: .locale_done
-
-.locale_done:
-	cat /dev/null > .locale_done
+build_mo: 
 	test -z "$(USE_LOCALES)" || for loc in $(LOCALES); do \
 		msgfmt $(PO) -o $(MO); \
 	done
+
+.locale_done: build_mo
+	cat /dev/null > .locale_done
 	
 locale: build_po
 
