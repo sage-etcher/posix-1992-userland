@@ -47,11 +47,11 @@ uninstall:
 
 depend: makefile.depend
 
-$(STATIC_LIB): $(OBJS)
+$(STATIC_LIB): $(DEPS) $(OBJS)
 	test -z "$(AS_STATIC)" || \
 		$(AR) rcs $@ $(OBJS)
 	
-$(SHARED_LIB): $(OBJS)
+$(SHARED_LIB): $(DEPS) $(OBJS)
 	test -z "$(AS_SHARED)" || \
 		$(CC) -o $@ $(OBJS) $(LDFLAGS) -shared
 

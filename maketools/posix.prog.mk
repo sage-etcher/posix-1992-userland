@@ -41,7 +41,7 @@ uninstall:
 
 depend: makefile.depend
 
-$(PROG): $(OBJS)
+$(PROG): $(DEPS) $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 .c.o:
