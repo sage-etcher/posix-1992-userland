@@ -8,47 +8,45 @@
 char *
 basename (char *string, char *suffix)
 {
-    int all_slashes = 0;
-    char *iter = NULL;
+    char *a = NULL;
+    char *b = NULL;
 
-    /* (1) if _string_ is "//" it is implementation defined if steps 2-5 are 
-     *     skipped. */
+    /* handle empty and null _string_ */
+    if ((string == NULL) || !(*string)) { return string; }
 
-    /* (2) if _string_ is all '/' characters, _string_ should be set to a 
-     *     single "/", skip 3-5. */
-    for (iter = string; *iter && (all_slashes = (*iter == '/')); iter++) { }
-    if (all_slashes)
-    {
-        string[0] = '/';
-        string[1] = '\0';
-        return string;
-    }
+    /* move _a_ to the end of _string_
+     * iterate back until _a_ is either:
+     *   at the base of string, or
+     *   at a non-slash (/) character.
+     * step _a_ forward by 1 character and place the NULL terminator. */
+    for (a = string; *a; a++) { }
+    for (a--; a > string && *a == '/'; a--) { }
+    a[1] = '\0';
 
-    /* (3) remove trailing '/' characters from _string_. */
-    for (iter = string; *iter; iter++) { }
-    for (iter--; (iter >= string) && (*iter == '/'); iter--) { }
-    iter[1] = '\0';
+    /* check to resulting string, if it equal to a single slash (/), return */
+    if (0 == strcmp (string, "/")) { return string; }
 
-    /* (4) remove all characters up to and including the first '/' character. */
-    for (; (iter >= string) && (*iter != '/'); iter--) { }
-    string = iter+1;
+    /* otherwise, store a pointer to the end of string */
+    b = a + 1;
 
-    /* (5) if _suffix_ operand is present, and isn't identical to the remaining 
-     *     _string_, but does match the suffix of _string_, remove the suffix, 
-     *     otherwise, do nothing. 
-     *     note: a missing suffix is NOT an error condition. */
-    if ((suffix == NULL) ||
-        (strlen (string) <= strlen (suffix)) ||
-        (0 == strcmp (string, suffix)))
-    {
-        return string;
-    }
+    /* and continue to iterate back until _a_ is either:
+     *   at the base of _string_, or
+     *   at a slash (/) character.
+     * step _a_ forward by 1 character and assign _a_ to be the new _string_ */
+    for (a--; a >= string && *a != '/'; a--) { }
+    string = a + 1;
 
-    iter = string + strlen(string) - strlen(suffix);
-    if (0 == strcmp (iter, suffix))
-    {
-        *iter = '\0';
-    }
+    /* if no suffix is given, return _string_ as is */
+    if (!suffix) { return string; }
+
+    /* otherwise, step _b_ (end of _string_) back _suffix_.length elements.
+     * if _b_ points before or at the start of _string_, return _string_ */
+    b -= strlen (suffix);
+    if (b <= string) { return string; }
+
+    /* finally, compare _b_ and _suffix_, if they match, place a NULL 
+     * terminator at _b_ and return. */
+    if (0 == strcmp (b, suffix)) { *b = '\0'; }
 
     return string;
 }
