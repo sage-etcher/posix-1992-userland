@@ -23,14 +23,14 @@ basename (char *string, char *suffix)
     for (a--; a > string && *a == '/'; a--) { }
     a[1] = '\0';
 
-    /* check to resulting string, if it equal to a single slash (/), return */
+    /* if string is a single slash, return _string_ */
     if (0 == strcmp (string, "/")) { return string; }
 
     /* otherwise, store a pointer to the end of string */
     b = a + 1;
 
     /* and continue to iterate back until _a_ is either:
-     *   at the base of _string_, or
+     *   at 1 character before the base of _string_, or
      *   at a slash (/) character.
      * step _a_ forward by 1 character and assign _a_ to be the new _string_ */
     for (a--; a >= string && *a != '/'; a--) { }
