@@ -3,48 +3,21 @@
 
 #include "chgrp.h"
 
-#include <ctype.h>
-#include <dirent.h>
+#include "basename.h"
+#include "convert.h"
+#include "err.h"
+#include "iterdir.h"
+#include "vstring.h"
+
 #include <errno.h>
-#include <getopt.h>
 #include <grp.h>
-#include <limits.h>
+#include <getopt.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-int 
-atou_s (const char *a, unsigned *p_u)
-{
-    unsigned u = 0;
-    const char *iter = a;
-
-    if ((a == NULL) || (p_u == NULL))
-    { 
-        return (errno = EINVAL);
-    }
-
-    /* ensure that the string is all digits */
-    for (; isdigit (*iter); iter++) { }
-    if (*iter != '\0') 
-    { 
-        return (errno = EINVAL);
-    };
-
-    /* convert to unsigned */
-    for (; *a; a++)
-    {
-        u *= 10;
-        u += '0' - *a;
-    }
-
-    *p_u = u;
-    return 0;
-}
+#define CHGRP_USAGE "chgrp [-R] group file..."
 
 
 int
@@ -67,7 +40,7 @@ get_gid_s (const char *group_in, gid_t *p_gid)
     }
 
     /* if that fails, try it as a group number */
-    if (0 == atou_s (group_in, &gid))
+    if (0 == atou_s (group_in, &gid, 10))
     {
         *p_gid = gid;
         return 0;
@@ -79,60 +52,41 @@ get_gid_s (const char *group_in, gid_t *p_gid)
 int
 chgrp (gid_t gid, const char *path, int recurse)
 {
-    char child_path[PATH_MAX+1];
-
     int rc = 0;
-    struct stat stbuf = { 0 };
-    DIR *dfd = NULL;
+
     struct dirent *dp = NULL;
+    char  *new_buf = NULL;
+    size_t new_len = 0;
 
     /* change group */
     if (chown (path, -1, gid))
     {
         rc = 1;
-        fprintf (stderr, "chgrp: cannot access: '%s': %s\n", path, strerror (errno));
+        ERR_ACCESS (path, errno);
     }
 
     /* and do nothing more if non recursive */
     if (!recurse) { return rc; }
 
-    /* otherwise, on a recursive run, stat the file */
-    if ((rc = stat (path, &stbuf)))
-    {
-        rc = 1;
-        fprintf (stderr, "chgrp: cannot access: '%s': %s\n", path, strerror (errno));
-        return rc;
-    }
-
-    /* if it is not a directory, dont search through it */
-    if (!S_ISDIR (stbuf.st_mode)) { return rc; }
-
     /* but if it is! loop through it, recurively */
-    dfd = opendir (path);
-    if (dfd == NULL)
-    {
-        rc = 1;
-        fprintf (stderr, "chgrp: cannot search: '%s': %s\n", path, strerror (errno));
-        return rc;
-    }
-
-    while ((dp = readdir (dfd)) != NULL)
+    if (!is_dir (path)) { return rc; }
+    for (dp = iterdir (path); dp != NULL; dp = iterdir (NULL))
     {
         /* dont traverse special directories */
-        if ((0 == strcmp (dp->d_name, ".")) ||
-            (0 == strcmp (dp->d_name, "..")))
-        {
-            continue;
-        }
+        if (is_special_dir (dp->d_name)) { continue; }
 
-        *child_path = '\0';
-        (void)strncat (child_path, path, PATH_MAX);
-        (void)strncat (child_path, "/", PATH_MAX);
-        (void)strncat (child_path, dp->d_name, PATH_MAX);
-        rc |= chgrp (gid, child_path, recurse);
+        new_len = strcat_auto (NULL, 3, path, "/", dp->d_name);
+        new_buf = realloc (new_buf, new_len+1);
+        *new_buf = '\0';
+        (void)strcat_auto (new_buf, 3, path, "/", dp->d_name);
+        
+        rc |= chgrp (gid, new_buf, recurse);
     }
+    free (new_buf);
+    new_buf = NULL;
+    new_len = 0;
+    iterdir_done ();
 
-    closedir (dfd);
     return rc;
 }
 
@@ -150,6 +104,9 @@ chgrp_main (int argc, char **argv)
     size_t file_count = 0;
     gid_t gid = 0;
 
+    /* configure err */
+    g_err_prefix = basename (argv[0], NULL);
+
     /* get options */
     while ((c = getopt (argc, argv, "R")) != -1)
     {
@@ -160,7 +117,7 @@ chgrp_main (int argc, char **argv)
             break;
 
         default:
-            fprintf (stderr, "usage: chgrp [-R] group file [file...]\n");
+            ERR_USAGE (CHGRP_USAGE);
             return 1;
         }
     }
@@ -170,7 +127,7 @@ chgrp_main (int argc, char **argv)
 
     if (argc < 2)
     {
-        fprintf (stderr, "usage: chgrp [-R] group file [file...]\n");
+        ERR_USAGE (CHGRP_USAGE);
         return 1;
     }
     group_in = argv[0];
@@ -180,7 +137,7 @@ chgrp_main (int argc, char **argv)
     /* get group id */
     if (get_gid_s (group_in, &gid))
     {
-        fprintf (stderr, "chgrp: invalid group: '%s'\n", group_in);
+        ERR_INVALID_GROUP (group_in);
         return 1;
     }
 

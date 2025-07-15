@@ -1,5 +1,10 @@
 
 chgrp_dep_list = [
+  basename_dep,
+  convert_dep,
+  err_dep,
+  iterdir_dep,
+  vstring_dep,
 ]
 
 chgrp_inc = include_directories('.')

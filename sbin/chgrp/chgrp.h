@@ -7,7 +7,8 @@ extern "C" {
 
 #include <sys/types.h>
 
-
+int get_gid_s (const char *group_in, gid_t *p_gid);
+int chgrp (gid_t gid, const char *path, int recurse);
 int chgrp_main (int argc, char **argv);
 
 

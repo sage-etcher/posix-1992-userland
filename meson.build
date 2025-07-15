@@ -28,6 +28,7 @@ conf_file = configure_file(
 )
 
 # build logic
+subdir('lib')
 subdir('sbin')
 
 # unit tests
