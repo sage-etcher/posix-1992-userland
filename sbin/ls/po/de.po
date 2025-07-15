@@ -1,4 +1,9 @@
+msgid ""
+msgstr ""
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-07-15 15:46-0400\n"
 "Last-Translator: Kira <https://github.com/LePenner>\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 
 #: sbin/ls/ls.c:270
 msgid "cannot read directory"
@@ -17,4 +22,4 @@ msgstr "Nutzung: ls [-CFRacdilqrtu1][Datei...]\n"
 #: sbin/ls/ls.c:927
 #, c-format
 msgid "ls: error no mode selected\n"
-msgstr "ls: Fehler kein Modus ausgewählt\n"
+msgstr "ls: Fehler kein Modus ausgewhlt\n"
