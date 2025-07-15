@@ -1,0 +1,20 @@
+"Last-Translator: Kira <https://github.com/LePenner>\n"
+
+#: sbin/ls/ls.c:270
+msgid "cannot read directory"
+msgstr "Verzeichnis nicht aufrufbar"
+
+#: sbin/ls/ls.c:653
+#, c-format
+msgid "total %lu\n"
+msgstr "Gesamt %lu\n"
+
+#: sbin/ls/ls.c:864
+#, c-format
+msgid "usage: ls [-CFRacdilqrtu1][file...]\n"
+msgstr "Nutzung: ls [-CFRacdilqrtu1][Datei...]\n"
+
+#: sbin/ls/ls.c:927
+#, c-format
+msgid "ls: error no mode selected\n"
+msgstr "ls: Fehler kein Modus ausgewählt\n"

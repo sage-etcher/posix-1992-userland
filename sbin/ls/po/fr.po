@@ -1,0 +1,18 @@
+#: sbin/ls/ls.c:270
+msgid "cannot read directory"
+msgstr ""
+
+#: sbin/ls/ls.c:653
+#, c-format
+msgid "total %lu\n"
+msgstr ""
+
+#: sbin/ls/ls.c:864
+#, c-format
+msgid "usage: ls [-CFRacdilqrtu1][file...]\n"
+msgstr ""
+
+#: sbin/ls/ls.c:927
+#, c-format
+msgid "ls: error no mode selected\n"
+msgstr ""

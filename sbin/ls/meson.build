@@ -1,0 +1,34 @@
+
+# lists
+ls_srcs = [
+  'ls.c',
+]
+
+ls_dep_list = [
+  m_dep,
+]
+
+# localization
+subdir('po')
+
+# library generation
+ls_inc = include_directories('.')
+ls_lib = library('ls', ls_srcs, 
+  dependencies: ls_dep_list,
+  install: true,
+)
+ls_dep = declare_dependency(
+  link_with: ls_lib, 
+  include_directories: ls_inc,
+  dependencies: ls_dep_list,
+)
+
+# executable generation
+ls_bin = executable('ls', 'main.c', 
+  dependencies: [
+    ls_dep,
+  ],
+  install: true,
+)
+
+# end of file
