@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -54,5 +55,25 @@ strcat_auto (char *buf, size_t i, ...)
     va_end (args);
     return rc;
 }
+
+char *
+strdup (const char *src)
+{
+    size_t size = 0;
+    char *dst = NULL;
+
+    if (src == NULL) { return NULL; }
+
+    /* allocate dst */
+    size = strlen (src);
+    dst = malloc (size + 1);
+    if (dst == NULL) { return NULL; }
+
+    /* copy data over */
+    (void)strcpy (dst, src);
+
+    return dst;
+}
+
 
 /* end of file */

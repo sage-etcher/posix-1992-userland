@@ -2,12 +2,12 @@
 test_dirs = [
   'add_child',
   'dir_content',
-  'filter',
-  'lu_len',
-  'map',
-  'snprintlu',
-  'snprintlu_dup',
-  'strdup',
+  #'filter',
+  #'lu_len',
+  #'map',
+  #'snprintlu',
+  #'snprintlu_dup',
+  #'strdup',
 ]
 
 foreach test_dir : test_dirs

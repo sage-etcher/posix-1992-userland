@@ -8,6 +8,10 @@ extern "C" {
 #include <stdarg.h>
 #include <stddef.h>
 
+#ifndef strdup
+char *strdup (const char *src);
+#endif
+
 int vstrncat_auto (char *buf, size_t n, size_t i, va_list args);
 size_t strncat_auto (char *buf, size_t n, size_t i, ...);
 size_t strcat_auto (char *buf, size_t i, ...);

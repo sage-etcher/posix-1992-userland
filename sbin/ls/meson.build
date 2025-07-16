@@ -5,7 +5,10 @@ ls_srcs = [
 ]
 
 ls_dep_list = [
+  convert_dep,
+  functional_dep,
   m_dep,
+  vstring_dep,
 ]
 
 # localization

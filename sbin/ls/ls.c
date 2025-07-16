@@ -1,6 +1,12 @@
 
 #define _POSIX_C_SOURCE 2
 
+#include "ls.h"
+
+#include "functional.h"
+#include "convert.h"
+#include "vstring.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <libintl.h>
@@ -101,126 +107,20 @@ static int list_directory (char *dir);
 static int list_directories (char **dirs, size_t n, int first);
 
 
-/* generic */
-size_t
-filter (void *arr, size_t elem_count, size_t elem_size, int (*cb)(void *cb_data, void *a), void *cb_data)
+static char *
+lutoa_dup (long unsigned lu, short unsigned base)
 {
     /* {{{ */
-    unsigned char *src = arr;
-    unsigned char *dst = arr;
-    size_t count = 0;
+    size_t size = lulen (lu, base);
+    char *buf = malloc (size + 1);
 
-    if ((arr == NULL) || (!elem_count) || (!elem_size) || (cb == NULL))
-    {
-        return 0;
-    }
+    if (buf == NULL) { return NULL; }
 
-    for (; elem_count > 0; elem_count--)
-    {
-        if (cb (cb_data, src))
-        {
-            (void)memcpy (dst, src, elem_size);
-            dst += elem_size;
-            count++;
-        }
-        src += elem_size;
-    }
+    (void)lutoa_s (buf, size, lu, base);
 
-    return count;
-    /* }}} */
-}
-
-void
-map (void *arr, size_t elem_count, size_t elem_size, void (*cb)(void *cb_data, void *a), void *cb_data)
-{
-    /* {{{ */
-    unsigned char *iter = arr;
-
-    if ((arr == NULL) || (!elem_count) || (!elem_size) || (cb == NULL))
-    {
-        return;
-    }
-
-    for (; elem_count > 0; elem_count--)
-    {
-        cb (cb_data, iter);
-        iter += elem_size;
-    }
-    /* }}} */
-}
-
-char *
-strdup (const char *src)
-{
-    /* {{{ */
-    size_t n = 0;
-    char *dst = NULL;
-
-    if (src == NULL)
-    {
-        return NULL;
-    }
-
-    n = strlen (src);
-    dst = malloc (n + 1);
-    return memcpy (dst, src, n+1);
-    /* }}} */
-}
-
-size_t 
-lu_len (long unsigned lu)
-{
-    /* {{{ */
-    size_t n = 0;
-
-    if (lu == 0) return 1;
-
-    for (n = 0; lu > 0; lu /= 10, n++);
-
-    return n;
-    /* }}} */
-}
-
-size_t 
-snprintlu (char *buf, size_t n, long unsigned lu)
-{
-    /* {{{ */
-    size_t i = 0;
-    size_t size = lu_len (lu);
-    
-    /* if buf is null, return reqruied */
-    if (buf == NULL) return size+1;
-
-    /* otherwise reture # of bytes written (i) */
-    if (n == 0) return i;
-
-    n--;
-    buf[n] = '\0';
-    i++;
-
-    while (i <= n)
-    {
-        buf[n-i] = '0' + (lu % 10);
-        lu /= 10;
-        i++;
-    }
-
-    return i;
-    /* }}} */
-}
-
-
-char *
-snprintlu_dup (long unsigned lu)
-{
-    /* {{{ */
-    size_t size = snprintlu (NULL, 0, lu);
-    char *buf = malloc (size);
-    (void)snprintlu (buf, size, lu);
     return buf;
     /* }}} */
 }
-
 
 /* unix stuff */
 char *
@@ -297,7 +197,7 @@ get_user_name (uid_t uid)
     /* if the the user cannot be found */
     if (NULL == user)
     {
-        return snprintlu_dup (uid);
+        return lutoa_dup (uid, 10);
     }
 
     return strdup (user->pw_name);
@@ -316,7 +216,7 @@ get_group_name (gid_t gid)
     /* if the the group cannot be found */
     if (NULL == group)
     {
-        return snprintlu_dup (gid);
+        return lutoa_dup (gid, 10);
     }
 
     return strdup (group->gr_name);
@@ -534,7 +434,7 @@ get_printable_filename (char *src, mode_t mode)
     dst[n] = '\0';
 
     if (!(s_conf & PRINTABLE)) return dst;
-    map (dst, strlen (dst), sizeof (char), map_make_printable, NULL);
+    (void)map_s (dst, strlen (dst), sizeof (char), map_make_printable, NULL);
 
     return dst;
     /* }}} */
@@ -639,11 +539,11 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
         fmt[i].group = get_group_name (iter->stat.st_gid);
         fmt[i].date  = get_date (iter->time);
 
-        max_widths[0] = MAX (max_widths[0], (int)lu_len (iter->stat.st_ino));
-        max_widths[1] = MAX (max_widths[1], (int)lu_len (iter->stat.st_nlink));
+        max_widths[0] = MAX (max_widths[0], (int)lulen (iter->stat.st_ino, 10));
+        max_widths[1] = MAX (max_widths[1], (int)lulen (iter->stat.st_nlink, 10));
         max_widths[2] = MAX (max_widths[2], (int)strlen (fmt[i].owner));
         max_widths[3] = MAX (max_widths[3], (int)strlen (fmt[i].group));
-        max_widths[4] = MAX (max_widths[4], (int)lu_len (iter->stat.st_size));
+        max_widths[4] = MAX (max_widths[4], (int)lulen (iter->stat.st_size, 10));
 
         total_blocks += iter->stat.st_blocks;
     }
@@ -670,7 +570,7 @@ long_mode (file_stat_t *stats, size_t n, const char *dir)
                 iter->printable);
     }
 
-    map (fmt, n, sizeof (*fmt), map_free_long_fmt, NULL);
+    (void)map_s (fmt, n, sizeof (*fmt), map_free_long_fmt, NULL);
     free (fmt); fmt = NULL;
     return 0;
     /* }}} */
@@ -716,7 +616,7 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
         
         if (s_conf & INODE_MODE)
         {
-            inode_width = MAX (inode_width, (int)lu_len (stats[i].stat.st_ino));
+            inode_width = MAX (inode_width, (int)lulen (stats[i].stat.st_ino, 10));
             tmp_width += inode_width;
         }
 
@@ -762,7 +662,7 @@ single_mode (file_stat_t *stats, size_t n, const char *dir)
 
     for (i = 0, iter = stats; i < n; i++, iter++)
     {
-        max_widths[0] = MAX (max_widths[0], (int)lu_len (iter->stat.st_ino));
+        max_widths[0] = MAX (max_widths[0], (int)lulen (iter->stat.st_ino, 10));
     }
 
     for (i = 0, iter = stats; i < n; i++, iter++)
@@ -931,9 +831,9 @@ list_files (char **files, size_t n, char *dir)
     /* recursive */
     if (s_conf & RECURSIVE)
     {
-        n = filter (stats, n, sizeof (*stats), filter_non_directories, NULL);
-        n = filter (stats, n, sizeof (*stats), filter_special_directories, NULL);
-        map (stats, n, sizeof (*stats), map_add_path, dir);
+        (void)filter_s (stats, n, sizeof (*stats), filter_non_directories, NULL, &n);
+        (void)filter_s (stats, n, sizeof (*stats), filter_special_directories, NULL, &n);
+        (void)map_s (stats, n, sizeof (*stats), map_add_path, dir);
 
         recurse_buf = malloc (n * sizeof (char *));
         for (i = 0; i < n; i++)
@@ -943,7 +843,7 @@ list_files (char **files, size_t n, char *dir)
         list_directories (recurse_buf, n, 0);
 
         free (recurse_buf); recurse_buf = NULL;
-        map (stats, n, sizeof (*stats), map_free_file_stat, NULL); 
+        (void)map_s (stats, n, sizeof (*stats), map_free_file_stat, NULL); 
     }
 
     free (stats); stats = NULL;
@@ -956,6 +856,7 @@ list_directory (char *dir)
 {
     /* {{{ */
     int n_entries = 0;
+    size_t result = 0;
     char **entries = NULL;
 
     n_entries = dir_content (NULL, 0, dir);
@@ -970,13 +871,14 @@ list_directory (char *dir)
     /* remove hidden files */
     if (!(s_conf & HIDDEN))
     {
-        n_entries = filter (entries, n_entries, sizeof (*entries), filter_hidden, NULL);
+        (void)filter_s (entries, n_entries, sizeof (*entries), filter_hidden, NULL, &result);
+        n_entries = result;
     }
 
     /* list the contents */
     list_files (entries, n_entries, dir);
 
-    map (entries, n_entries, sizeof (*entries), map_free_str_array, NULL);
+    (void)map_s (entries, n_entries, sizeof (*entries), map_free_str_array, NULL);
     free (entries); entries = NULL;
 
     return 0;
