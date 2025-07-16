@@ -11,6 +11,9 @@ ls_dep_list = [
 # localization
 subdir('po')
 
+# manpages
+install_man('ls.1')
+
 # library generation
 ls_inc = include_directories('.')
 ls_lib = library('ls', ls_srcs, 
