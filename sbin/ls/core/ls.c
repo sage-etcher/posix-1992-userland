@@ -1000,9 +1000,12 @@ list_directories (char **dirs, size_t n, int first)
 
     for (i = 0; i < n; i++, dirs++)
     {
-        if ((n > 1) || (s_conf & RECURSIVE))
+        if (!first || (n > 1) || (s_conf & RECURSIVE))
         {
-            if (!first) printf ("\n");
+            if (!first) 
+            {
+                printf ("\n");
+            }
             printf ("%s:\n", *dirs);
         }
 
@@ -1022,6 +1025,7 @@ list_directories (char **dirs, size_t n, int first)
 static int
 list_unknown (char **args, size_t n)
 {
+    /* {{{ */
     size_t i = 0;
     struct stat s = { 0 };
 
@@ -1051,12 +1055,13 @@ list_unknown (char **args, size_t n)
 
     if (dirs_n != 0)
     {
-        list_directories (dirs, dirs_n, 1);
+        list_directories (dirs, dirs_n, files_n == 0);
     }
 
     free (dirs);
     free (files);
     return 0;
+    /* }}} */
 }
 
 int
