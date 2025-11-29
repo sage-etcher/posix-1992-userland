@@ -723,9 +723,15 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
 
         column_width = MAX (column_width, (int)tmp_width);
     }
+    
+    if (column_width >= terminal_width)
+    {
+        return single_mode (stats, n, dir);
+    }
 
-    columns = MAX (terminal_width / (column_width + (int)strlen (seperator)), 1);
+    columns = terminal_width / (column_width + (int)strlen (seperator));
     rows = (int)ceil ((double)n / columns);
+
 
     for (i = 0; (int)i < rows; i++)
     {
@@ -1012,6 +1018,46 @@ list_directories (char **dirs, size_t n, int first)
     /* }}} */
 }
 
+static int
+list_unknown (char **args, size_t n)
+{
+    size_t i = 0;
+    struct stat s = { 0 };
+
+    char **files = malloc (sizeof (char *) * n);
+    char **dirs  = malloc (sizeof (char *) * n);
+
+    size_t files_n = 0;
+    size_t dirs_n = 0;
+
+    for (i = 0; i < n; i++)
+    {
+        if (stat (args[i], &s)) continue;
+        if (S_ISDIR (s.st_mode))
+        {
+            dirs[dirs_n++] = args[i];
+        }
+        else
+        {
+            files[files_n++] = args[i];
+        }
+    }
+
+    if (files_n != 0)
+    {
+        list_files (files, files_n, NULL);
+    }
+
+    if (dirs_n != 0)
+    {
+        list_directories (dirs, dirs_n, 1);
+    }
+
+    free (dirs);
+    free (files);
+    return 0;
+}
+
 int
 ls_main (int argc, char **argv)
 {
@@ -1038,7 +1084,8 @@ ls_main (int argc, char **argv)
     }
     else
     {
-        rc = list_directories (argv, argc, 1);
+        /*rc = list_directories (argv, argc, 1); */
+        rc = list_unknown (argv, argc);
     }
 
     return rc;
