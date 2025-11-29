@@ -724,13 +724,14 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
         column_width = MAX (column_width, (int)tmp_width);
     }
     
-    if (column_width >= terminal_width)
-    {
-        return single_mode (stats, n, dir);
-    }
 
     columns = terminal_width / (column_width + (int)strlen (seperator));
     rows = (int)ceil ((double)n / columns);
+    
+    if (columns <= 0)
+    {
+        return single_mode (stats, n, dir);
+    }
 
 
     for (i = 0; (int)i < rows; i++)
