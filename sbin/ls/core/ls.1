@@ -1,0 +1,46 @@
+
+.\" Manpage for shls.
+.\" Contact sage.message@email.com to correct errors or typos.
+.TH man 1 "30 Jun 2025" "0.1" "shls man page"
+.SH NAME
+ls
+.SH SYNOPSIS
+ls [-CFRacdilqrtu1][file...]
+.SH DESCRIPTION
+ls lists files in a given directory. This specific version is an 
+implementation from the 1992 POSIX.2 userland standard.
+.SH OPTIONS
+-C  write entries into columns.
+
+-F  write a slish (/) after directories, an astrisk (*) after executables and 
+a vertical line (|) after FIFOs.
+
+-R  write directories recursively.
+
+-a  write all directory entries, including those that begin with a period (.).
+
+-c  use time of last modification of the file status information instead of 
+last modification of the file itself for sorting (-t) and writing (-l [ell]).
+
+-d  treat directories as files.
+
+-i  for each entry, write the file inode number with the name.
+
+-l  (ell) write extra information about each entry (assumes -1 (one)).
+
+-q  replace all non-printable characters with question marks (?).
+
+-r  reverse the sort order.
+
+-t  sort by time of last modification of the file before sorting alphabetically.
+
+-u  use time of last access instead of last modification for sorting (-t) and 
+writing (-l [ell]).
+
+-1  (one) write one entry per line
+.SH BUGS
+working on getting translations in for locales
+.SH AUTHOR
+Sage Hendricks (sage.message@email.com)  
+
+<https://github.com/sage-etcher/posix-1992-userland>

@@ -1,9 +1,33 @@
 # posix-1992-userland
+
 Implementing POSIX.2-1992 userland for modern systems
 
 see `man ls.1` for more details on usage.
 
-Build requires a posix compliant Make: gmake, bsdmake, ect.
+Compile-time dependencies:
 
-    $ make
-    # make install
+- posix `make` (`gnumake`, `bsdmake`, `make`)
+- gettext
+
+## Install 
+
+```
+$ make
+# make install
+```
+
+or 
+
+```
+$ make install -- PREFIX="/usr" DESTDIR="$(pwd)/installdir"
+```
+
+## Devel
+
+```
+$ create-hook-symlinks
+$ echo "ENABLE_TESTS=true" >>config.mk
+$ make -B depend
+$ make
+$ make install
+```

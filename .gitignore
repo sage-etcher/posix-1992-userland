@@ -53,9 +53,18 @@ dkms.conf
 
 # ignore build junk
 *.gz
-makefile.depend
+.cache/
+compile_commands.json
+*~
 .locale_done
 
 # ignore gettext junk
 *.pot
 *.mo
+
+# ignore typos
+\\
+:w
+:
+:q
+:wq

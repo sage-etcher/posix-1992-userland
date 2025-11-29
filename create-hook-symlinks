@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+for f in .githooks/*; do
+    ln -sf ../../$f .git/hooks/$(basename $f)
+done
