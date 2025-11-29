@@ -46,6 +46,7 @@ enum {
 #define IS_BFLAG(var, flag)         ((var) & (flag))
 
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
 #define UNUSED(x) ((void)(x))
 
 #if !defined(DOMAIN_NAME) || !defined(DOMAIN_DIR)
@@ -690,8 +691,8 @@ column_mode (file_stat_t *stats, size_t n, const char *dir)
         column_width = MAX (column_width, (int)tmp_width);
     }
 
-    columns = terminal_width / (column_width + (int)strlen (seperator));
-    rows = (int)ceil((double)n / columns);
+    columns = MAX (terminal_width / (column_width + (int)strlen (seperator)), 1);
+    rows = (int)ceil ((double)n / columns);
 
     for (i = 0; (int)i < rows; i++)
     {
